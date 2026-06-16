@@ -3,6 +3,7 @@ export type Blog = {
   slug: string;
   title: string;
   content: string;
+  latestModifiedAt?: string;
 };
 
 export type BlogPageData = {

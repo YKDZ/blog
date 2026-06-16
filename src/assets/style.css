@@ -94,4 +94,39 @@
   .prose :not(pre) > code::after {
     content: none !important;
   }
+
+  .prose [data-footnotes] {
+    border-top: 1px solid var(--page-border-soft);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+  }
+
+  .prose [data-footnotes] > h2 {
+    display: none;
+  }
+
+  .prose [data-footnotes] ol {
+    margin: 0;
+    padding-inline-start: 1.25rem;
+  }
+
+  .prose [data-footnotes] li {
+    margin: 0.35rem 0 0;
+    padding-inline-start: 0.15rem;
+  }
+
+  .prose [data-footnotes] li:first-child {
+    margin-top: 0;
+  }
+
+  .prose [data-footnotes] p {
+    margin: 0;
+  }
+
+  .prose [data-footnote-backref] {
+    font-size: 0.75em;
+    margin-inline-start: 0.25rem;
+  }
 }

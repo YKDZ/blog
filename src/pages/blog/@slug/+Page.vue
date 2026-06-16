@@ -5,6 +5,14 @@ import BlogRenderer from "./BlogRenderer.vue";
 import type { BlogPageData } from "./types";
 
 const data = useData<BlogPageData>();
+
+const formatDate = (value: string) => {
+  const [year, month, day] = new Date(value)
+    .toISOString()
+    .slice(0, 10)
+    .split("-");
+  return `${year} 年 ${Number(month)} 月 ${Number(day)} 日`;
+};
 </script>
 
 <template>
@@ -21,5 +29,14 @@ const data = useData<BlogPageData>();
       :html="data.html"
       :previews="data.previews"
     />
+    <footer
+      v-if="data.blog.latestModifiedAt"
+      class="mt-12 pt-5 text-xs text-(--page-muted)"
+    >
+      修改于
+      <time :datetime="data.blog.latestModifiedAt">
+        {{ formatDate(data.blog.latestModifiedAt) }}
+      </time>
+    </footer>
   </article>
 </template>

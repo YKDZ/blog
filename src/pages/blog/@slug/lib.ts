@@ -1,6 +1,8 @@
+import { execFile } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import path, { resolve, sep } from "node:path";
 import { cwd } from "node:process";
+import { promisify } from "node:util";
 
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
@@ -14,6 +16,8 @@ import rehypeCodeHighlight from "./plugins/codeHighlight";
 import rehypeHeadingId from "./plugins/headingId";
 import remarkUrlTransform from "./plugins/urlTransform";
 import type { Blog } from "./types";
+
+const execFileAsync = promisify(execFile);
 
 const sanitizeSchema = {
   ...defaultSchema,
@@ -119,6 +123,7 @@ const blogFromFile = (options: {
   dirname: string;
   slug: string;
   content: string;
+  latestModifiedAt?: string;
 }): BlogFile => {
   return {
     filePath: options.filePath,
@@ -127,7 +132,23 @@ const blogFromFile = (options: {
     slug: options.slug,
     title: firstMarkdownHeading(options.content) || options.slug,
     content: options.content,
+    latestModifiedAt: options.latestModifiedAt,
   };
+};
+
+export const latestModifiedAt = async (
+  filePath: string,
+): Promise<string | undefined> => {
+  try {
+    const { stdout } = await execFileAsync(
+      "git",
+      ["log", "-1", "--format=%cI", "--", filePath],
+      { cwd: cwd() },
+    );
+    return stdout.trim() || undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export const getBlog = async (slug: string) => {
@@ -145,6 +166,7 @@ export const getBlog = async (slug: string) => {
     dirname,
     slug,
     content,
+    latestModifiedAt: await latestModifiedAt(filePath),
   });
 };
 
@@ -154,6 +176,7 @@ export const publicBlog = (blog: BlogFile): Blog => {
     slug: blog.slug,
     title: blog.title,
     content: blog.content,
+    latestModifiedAt: blog.latestModifiedAt,
   };
 };
 

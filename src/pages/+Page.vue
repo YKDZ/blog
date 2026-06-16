@@ -6,7 +6,11 @@ import type { Blog } from "./blog/@slug/types";
 const { blogs } = useData<{ blogs: Blog[] }>();
 
 const formatDate = (time: number) => {
-  return new Date(time).toISOString().slice(0, 10);
+  const [year, month, day] = new Date(time)
+    .toISOString()
+    .slice(0, 10)
+    .split("-");
+  return `${year} 年 ${Number(month)} 月 ${Number(day)} 日`;
 };
 </script>
 
@@ -19,11 +23,11 @@ const formatDate = (time: number) => {
         class="border border-(--page-border-soft) bg-(--page-surface) transition-colors duration-200 hover:border-(--page-border-hover)"
       >
         <a :href="`/blog/${blog.slug}`" class="block px-5 py-4">
-          <time class="block text-xs font-normal text-[var(--page-fg)]">
+          <time class="block text-xs font-normal text-(--page-fg)">
             {{ formatDate(blog.time) }}
           </time>
           <h2
-            class="mt-2 text-xl font-semibold tracking-normal text-[var(--page-fg)]"
+            class="mt-2 text-xl font-semibold tracking-normal text-(--page-fg)"
           >
             {{ blog.title }}
           </h2>

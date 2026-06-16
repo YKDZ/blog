@@ -23,3 +23,5 @@ export const data = async (ctx: PageContextServer): Promise<BlogPageData> => {
     ),
   };
 };
+
+export type Data = Awaited<ReturnType<typeof data>>;

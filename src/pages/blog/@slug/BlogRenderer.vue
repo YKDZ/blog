@@ -15,7 +15,6 @@ type ActivePreview = BlogPreview & {
 };
 
 const contentEl = ref<HTMLElement>();
-const previewHeaderEl = ref<HTMLElement>();
 const previewBodyEl = ref<HTMLElement>();
 const activePreview = ref<ActivePreview>();
 const previewLayerReady = ref(false);
@@ -123,8 +122,14 @@ const scrollPreviewToHash = async (hash: string) => {
 
   if (!target) return;
 
-  const headerHeight = previewHeaderEl.value?.offsetHeight ?? 0;
-  body.scrollTop = Math.max(0, target.offsetTop - headerHeight - 16);
+  const bodyRect = body.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const centeredTop =
+    body.scrollTop +
+    targetRect.top -
+    bodyRect.top -
+    (body.clientHeight - targetRect.height) / 2;
+  body.scrollTop = Math.max(0, centeredTop);
 };
 
 const onMouseMove = (event: MouseEvent) => {
@@ -166,10 +171,7 @@ onMounted(() => {
       class="pointer-events-none fixed z-20 hidden w-140 max-w-[calc(100vw-2rem)] border border-(--page-border-soft) bg-(--page-surface) text-(--page-fg) shadow-none md:block"
       :style="previewStyle"
     >
-      <header
-        ref="previewHeaderEl"
-        class="border-b border-(--page-border-soft) px-4 py-3"
-      >
+      <header class="border-b border-(--page-border-soft) px-4 py-3">
         <p class="text-xs font-semibold tracking-normal">
           {{ activePreview.title }}
         </p>
