@@ -5,12 +5,11 @@ import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 
 import {
-  blogUrl,
+  optimizedImageForPath,
   PUBLIC_DIR,
   publicUrlFromPath,
-  slugFromDirName,
-  type BlogFile,
-} from "../lib";
+} from "../imageAssets";
+import { blogUrl, slugFromDirName, type BlogFile } from "../lib";
 
 const URL_WITH_SCHEME = /^[a-z][a-z\d+.-]*:/i;
 
@@ -79,7 +78,9 @@ const isUrlNode = (node: unknown): node is Image | Link => {
  * 将文章内所有相对路径引用解析为前端可直接使用的 public URL。
  */
 const remarkUrlTransform: Plugin<[UrlTransformOptions], Root> = (options) => {
-  return function (tree) {
+  return async function (tree) {
+    const transforms: Promise<void>[] = [];
+
     visit(tree, ["link", "image"], function (node) {
       if (!isUrlNode(node) || isPassthroughUrl(node.url)) {
         return;
@@ -105,8 +106,26 @@ const remarkUrlTransform: Plugin<[UrlTransformOptions], Root> = (options) => {
         return;
       }
 
+      if (node.type === "image") {
+        transforms.push(
+          (async () => {
+            const optimizedImage = await optimizedImageForPath(refPath);
+
+            if (!optimizedImage) {
+              node.url = `${publicUrlFromPath(refPath)}${query}${hash}`;
+              return;
+            }
+
+            node.url = `${optimizedImage.optimizedUrl}${query}${hash}`;
+          })(),
+        );
+        return;
+      }
+
       node.url = `${publicUrlFromPath(refPath)}${query}${hash}`;
     });
+
+    await Promise.all(transforms);
   };
 };
 

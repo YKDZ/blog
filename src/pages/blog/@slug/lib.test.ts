@@ -89,6 +89,25 @@ test("带 title 的图片渲染为 img 标签并保留 title", async () => {
   );
 });
 
+test("真实本地图片渲染为 WebP", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content:
+      "![编辑器](public/blogs/1781577987795-first-of-all/assets/编辑器.png)",
+  } satisfies BlogFile;
+
+  const html = String(await contentHtml(blog));
+
+  expect(html).not.toContain("<a ");
+  expect(html).toMatch(
+    /<img src="\/optimized-images\/blogs\/1781577987795-first-of-all\/assets\/%E7%BC%96%E8%BE%91%E5%99%A8\.[a-f0-9]{12}\.webp" alt="编辑器">/,
+  );
+});
+
 test("列表续行图片渲染在列表项内", async () => {
   const blog = {
     filePath: testBlogPath,
