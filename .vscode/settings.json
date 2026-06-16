@@ -20,5 +20,8 @@
   "[json]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
+  "[markdown]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
   "chat.disableAIFeatures": true
 }
