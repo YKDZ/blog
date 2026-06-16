@@ -40,6 +40,7 @@
       "Source Han Sans SC",
       "WenQuanYi Micro Hei",
       sans-serif;
+    overflow-x: clip;
     overflow-y: scroll;
     scrollbar-gutter: stable;
   }
@@ -47,6 +48,7 @@
   body {
     background: var(--page-bg);
     color: var(--page-fg);
+    overflow-x: clip;
   }
 }
 
@@ -61,6 +63,11 @@
   :root[data-theme-mode="auto"] .theme-option[data-theme-option="auto"] {
     background: var(--page-fg);
     color: var(--page-bg);
+  }
+
+  .prose {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .prose pre.shiki {
@@ -87,7 +94,9 @@
     border-radius: 0;
     color: var(--page-fg);
     font-weight: 500;
+    overflow-wrap: anywhere;
     padding: 0.08em 0.28em;
+    word-break: break-word;
   }
 
   .prose :not(pre) > code::before,
@@ -95,12 +104,17 @@
     content: none !important;
   }
 
+  .prose blockquote p:first-of-type::before,
+  .prose blockquote p:last-of-type::after {
+    content: none !important;
+  }
+
   .prose [data-footnotes] {
-    border-top: 1px solid var(--page-border-soft);
-    font-size: 0.875rem;
+    border-top: 0px;
+    font-size: 0.875em;
     line-height: 1.6;
-    margin-top: 2.5rem;
-    padding-top: 1rem;
+    margin-top: 0rem;
+    padding-top: 0rem;
   }
 
   .prose [data-footnotes] > h2 {
@@ -128,5 +142,21 @@
   .prose [data-footnote-backref] {
     font-size: 0.75em;
     margin-inline-start: 0.25rem;
+  }
+
+  @media (max-width: 767px) {
+    .prose > p > img:only-child {
+      box-sizing: border-box;
+      display: block;
+      height: auto;
+      margin-inline: calc(50% - 50vw);
+      max-width: none;
+      width: 100vw;
+    }
+  }
+
+  [data-preview-target="true"] {
+    outline: 1px solid var(--page-border-soft);
+    outline-offset: 0.25rem;
   }
 }

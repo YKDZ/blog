@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from "vue";
 
 import BlogContent from "./BlogContent.vue";
+import { headingIdFromText } from "./plugins/headingId";
 import type { BlogPreview } from "./types";
 
 const props = defineProps<{
@@ -32,6 +33,14 @@ const previewStyle = computed(() => {
   };
 });
 
+const activePreviewTargetsTitle = computed(() => {
+  if (!activePreview.value?.hash) return false;
+
+  return (
+    activePreview.value.hash === headingIdFromText(activePreview.value.title)
+  );
+});
+
 const internalBlogLink = (href: string) => {
   const url = new URL(href, window.location.href);
 
@@ -56,6 +65,8 @@ const internalBlogLink = (href: string) => {
 
 const previewHasHash = (preview: BlogPreview, hash: string) => {
   if (!hash) return true;
+
+  if (hash === headingIdFromText(preview.title)) return true;
 
   const template = document.createElement("template");
   template.innerHTML = preview.html;
@@ -96,15 +107,28 @@ const previewTargetFromEvent = (event: MouseEvent) => {
 
 const movePreview = (event: MouseEvent) => {
   const width = Math.min(560, window.innerWidth - 32);
+  const height = Math.min(448, window.innerHeight - 32);
   const gap = 14;
   const viewportPadding = 16;
   const nextLeft = Math.min(
     event.clientX + gap,
     window.innerWidth - width - viewportPadding,
   );
+  const belowTop = event.clientY + gap;
+  const aboveTop = event.clientY - gap - height;
+  const nextTop = window.innerHeight - belowTop >= height ? belowTop : aboveTop;
 
   previewLeft.value = Math.max(viewportPadding, nextLeft);
-  previewTop.value = Math.max(viewportPadding, event.clientY + gap);
+  previewTop.value = Math.min(
+    Math.max(viewportPadding, nextTop),
+    window.innerHeight - height - viewportPadding,
+  );
+};
+
+const clearPreviewHighlight = () => {
+  previewBodyEl.value
+    ?.querySelector<HTMLElement>("[data-preview-target]")
+    ?.removeAttribute("data-preview-target");
 };
 
 const scrollPreviewToHash = async (hash: string) => {
@@ -115,8 +139,11 @@ const scrollPreviewToHash = async (hash: string) => {
   if (!body) return;
 
   body.scrollTop = 0;
+  clearPreviewHighlight();
 
   if (!hash) return;
+
+  if (hash === headingIdFromText(activePreview.value?.title ?? "")) return;
 
   const target = body.querySelector<HTMLElement>(`#${CSS.escape(hash)}`);
 
@@ -130,6 +157,7 @@ const scrollPreviewToHash = async (hash: string) => {
     bodyRect.top -
     (body.clientHeight - targetRect.height) / 2;
   body.scrollTop = Math.max(0, centeredTop);
+  target.dataset.previewTarget = "true";
 };
 
 const onMouseMove = (event: MouseEvent) => {
@@ -155,13 +183,22 @@ const onMouseLeave = () => {
   activePreview.value = undefined;
 };
 
+const onClick = () => {
+  activePreview.value = undefined;
+};
+
 onMounted(() => {
   previewLayerReady.value = true;
 });
 </script>
 
 <template>
-  <div ref="contentEl" @mouseleave="onMouseLeave" @mousemove="onMouseMove">
+  <div
+    ref="contentEl"
+    @click="onClick"
+    @mouseleave="onMouseLeave"
+    @mousemove="onMouseMove"
+  >
     <BlogContent :html="props.html" />
   </div>
 
@@ -172,7 +209,10 @@ onMounted(() => {
       :style="previewStyle"
     >
       <header class="border-b border-(--page-border-soft) px-4 py-3">
-        <p class="text-xs font-semibold tracking-normal">
+        <p
+          class="text-xs font-semibold tracking-normal"
+          :data-preview-target="activePreviewTargetsTitle ? 'true' : undefined"
+        >
           {{ activePreview.title }}
         </p>
       </header>

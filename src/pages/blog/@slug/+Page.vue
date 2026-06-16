@@ -2,6 +2,7 @@
 import { useData } from "vike-vue/useData";
 
 import BlogRenderer from "./BlogRenderer.vue";
+import { headingIdFromText } from "./plugins/headingId";
 import type { BlogPageData } from "./types";
 
 const data = useData<BlogPageData>();
@@ -16,10 +17,11 @@ const formatDate = (value: string) => {
 </script>
 
 <template>
-  <article class="pb-[50vh]">
+  <article class="md:pb-[50vh]">
     <header class="mb-10 border-b border-(--page-border-soft) pb-8 text-center">
       <h1
-        class="text-3xl leading-tight font-semibold tracking-normal sm:text-4xl"
+        :id="headingIdFromText(data.blog.title)"
+        class="scroll-mt-16 text-3xl leading-tight font-semibold tracking-normal sm:text-4xl"
       >
         {{ data.blog.title }}
       </h1>

@@ -1,152 +1,83 @@
-# 简单的博客渲染器
+# 我的博客
 
-这里用来测试博客的 md 解析和渲染能力。
+此文旨在测试博客的 md 渲染能力和内容页功能，也顺便介绍一下我的小博客。
 
-## 目录
+本站点是由 vike[^vike] 驱动的，以 SSG[^SSG] 模式在构建阶段完成渲染并部署在 [GitHub Pages](https://github.com/YKDZ/blog/deployments/github-pages) 上。
 
-- [段落与行内样式](#段落与行内样式)
-- [列表与任务](#列表与任务)
-- [引用块](#引用块)
-- [链接与站内预览](#链接与站内预览)
-- [图片与资源路径](#图片与资源路径)
-- [表格](#表格)
-- [代码块](#代码块)
-- [脚注](#脚注)
-- [分隔线](#分隔线)
+## 背景
 
-## 段落与行内样式
+博客最终还是以内容为中心的，因此我觉得码字体验是高于一切的。我曾尝试过 WordPress、Halo、VitePress、Ghost、Mix Space 等各种形态的博客应用，有 SSG 也有全栈应用。但这些通用产品对我来说都有令人不满的地方，例如：
 
-普通段落会按照窄内容布局排版。中文、英文和数字可以自然混排，例如：这个渲染器用于一个 SSG 博客，文章在构建时被转换成 HTML，前端只接收已经准备好的内容。
+- VitePress 虽然是 SSG，但是毕竟还是为产品文档一类需求设计的，写文章还要考虑 Sidebar 位置，不能做到在一个 `.md` 中就完成全部工作。另外文档标题、正文标题、`Sidebar Item` 标题又都是分开的，不符合 **DRY**[^DRY] 原则
+- Halo、WordPress、Ghost、Mix Space 等首先都是依赖 Web Server 的全栈应用。其次它也不是专门的博客应用，还兼顾知识库、官网等用例，且为了追赶潮流都有各种 AI 功能，对我就显得臃肿。另外写文章还得用 Web 编辑器，不够顺手
 
-行内样式包括 _强调_、**加粗**、~~删除线~~ 和 `inline code`。这些样式适合用于解释命令、变量名或简短状态，例如 `pnpm build`、`public/blogs` 和 `data-theme-mode`。
+因此我就做了这么一个简单的小应用来满足自己的需求。用它，我可以：
 
-如果需要手动换行，可以在行尾加两个空格。  
-这一行会紧跟上一行，但仍然保留明确的换行语义。
+- 直接编辑 markdown 文件，不用为了写个博客就花时间适应那些 WYSIWYG 编辑器
+- 产出静态页面，白嫖 GitHub Pages 的服务器，不用为了写博客多花钱
+- 文章直接以文件形式储存在 GitHub 上，安全可靠
+- 从写文章到预览到发布的全流程都可以在一个 VSCode 窗口内完成，很契合我的工作习惯
+  ![编辑器](./assets/编辑器.png)
+- 可以自己控制全部样式和布局，因此可以做出现在的这种超级复 ~~ya~~ 古 ~~yi~~ 效果
+- 可以自由扩展我喜欢的阅读器功能，比如 [hover 预览](./index.md#icon)
 
-## 列表与任务
+## 设计理念
 
-无序列表适合记录松散的能力点：
+### DRY
 
-- 文章标题来自第一条 Markdown 标题。
-- 图片资源会在编译时解析为 public 下的前端路径。
-- 站内博客链接会被解析成 `/blog/slug`。
-- 指向章节的 hash 会被保留，用于跳转和悬浮预览。
+> 在一个系统中，每一处知识都必须单一、明确、权威地表达。  
+> 《The Pragmatic Programmer》
 
-有序列表适合表达流程：
+当然抛开大道理不谈，我也不希望把一个文章标题写两三遍，特别还是要在 frontmatter，也就是在同一个文档内编写重复的文本。
 
-1. 在 `public/blogs` 下创建文章目录。
-2. 在目录里编写 `index.md`。
-3. 运行 `pnpm build`。
-4. 检查 `dist/client` 里的预渲染结果。
+因此，我的博客标题实际上是取自整个 md 文档内容的第一个 heading。我在主页的博文卡片和内容页的大标题处使用这个推断出的标题文本。
 
-GFM 任务列表可以表达状态：
+### 易用性
 
-- [x] 支持 GFM 表格、任务列表和删除线。
-- [x] 支持代码块高亮。
-- [x] 支持脚注互相跳转。
-- [ ] 未来可以继续增加目录自动生成。
-
-## 引用块
-
-引用块适合放一段需要被强调但不应该变成标题的内容。
-
-> 这个博客项目的目标不是把 Markdown 变成复杂 CMS，而是让写作路径尽量直接：文件放在 public 中，文章引用资源时使用自然的相对路径，构建阶段负责解析这些路径。
->
-> 引用块内部也可以包含 **加粗文本**、`inline code` 和列表：
->
-> - 保持内容可读。
-> - 保持构建结果稳定。
-> - 保持前端组件轻量。
-
-## 链接与站内预览
-
-普通外链会保持原样，例如 [Vike 官网](https://vike.dev "Vike 文档")。外链不会触发站内预览。
-
-指向当前文章章节的链接会保留 hash，例如 [跳到代码块](#代码块 "当前文章的代码块章节")。鼠标悬浮这类内部 hash 链接时，也应该显示对应位置的渲染预览。
-
-指向博客 Markdown 文件的链接会在编译时转换成博客路由。下面这个链接虽然写的是 public 内的 Markdown 文件，但构建后应该指向当前文章页面，并保留章节 hash：[查看脚注章节](public/blogs/1781577987795-first-of-all/index.md#脚注 "站内 Markdown 文件引用")。
-
-也可以使用相对路径写同样的引用：[回到目录](./index.md#目录 "相对路径引用当前文章")。
-
-## 图片与资源路径
-
-图片可以使用 public 目录内的路径。下面这张图来自根目录的 `public/favicon.svg`，它同时也是当前站点的 favicon：
-
-![博客图标示例](public/favicon.svg "黑底白色 cookbook 图标")
-
-资源链接也可以带 title 文本，构建时只会重写 URL 部分，不会吞掉后面的说明：[打开图标资源](public/favicon.svg "资源链接 title 会被保留")。
-
-## 表格
-
-表格适合对比渲染器各阶段的职责：
-
-| 阶段 | 输入         | 输出          | 主要职责               |
-| ---- | ------------ | ------------- | ---------------------- |
-| 读取 | `index.md`   | Markdown 文本 | 从 public 目录读取文章 |
-| 解析 | Markdown AST | HAST          | 处理 GFM、链接和图片   |
-| 增强 | HAST         | HAST          | 添加标题 id、代码高亮  |
-| 输出 | HAST         | HTML 字符串   | 交给 Vike 预渲染       |
-
-对齐语法也可以工作：
-
-| 项目     | 状态 |     备注 |
-| :------- | :--: | -------: |
-| 图片路径 | 完成 | 支持空格 |
-| 脚注     | 完成 | 支持返回 |
-| 代码块   | 完成 | 深色高亮 |
-
-## 代码块
-
-没有声明语言的代码块会按普通文本显示：
-
-```
-public/blogs/1781577987795-first-of-all/index.md
-public/favicon.svg
-```
-
-声明语言后会使用 GitHub 风格的深色代码高亮。TypeScript 示例：
-
-```ts
-type BlogLink = {
-  slug: string;
-  hash?: string;
-};
-
-const blogPath = ({ slug, hash = "" }: BlogLink) => {
-  return `/blog/${slug}${hash}`;
-};
-
-console.log(blogPath({ slug: "first-of-all", hash: "#代码块" }));
-```
-
-Shell 示例：
+写文章本来就很费心了，我不想再给自己加任务。目前我的工作流是：
 
 ```bash
-pnpm fmt
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
+# 创建文档模板
+pnpm write second
+/workspaces/blog/public/blogs/1781614950277-second/index.md
+# 启动开发服务器
+pnpm dev
 ```
 
-即使语言名写错，渲染器也会退回普通文本高亮，而不是让构建失败：
+这样就可以在侧边栏实时预览渲染效果，并在 VSCode 中编辑文档。
 
-```unknown-language
-这段代码块的语言名不存在，但文章仍然应该可以构建。
+写完后就直接通过 VSCode 的源代码管理 UI 进行提交和推送即可，GitHub Action 会自动触发并完成测试、构建和发布到 Pages 的工作。
+
+这种两条命令就可以开始写文章的复杂度对我来说是可以接受的，多几个步骤换来的是与编码心智模型相同的码字体验。
+
+### 灵活度
+
+我用 vite 原生支持的 Static Assets 机制在 `public/blogs/` 目录下管理所有文档。`pnpm write <slug>` 命令会帮我创建以下格式的博客模板：
+
+```
+<timestamp-slug>
+├── assets/
+└── index.md
 ```
 
-## 脚注
+在写文章时，我不用考虑图片等静态文件的放置位置，可以自由地用 `public/a/b/c.png`、`./assets/a.png`、`../xxx/assets/b.png`、`../xxx/index.md#title` 等各种方式引用 `public` 目录中的静态资源和其他文章等。在渲染时，一个 `remark` 插件会完成目录的映射工作，将对文档的引用解析为 `/blog/slug#hashtag` 的形式，而将其他静态资源解析为相对于 `/` 的 url 形式，以便直接利用 Static Assets 机制引用打包好的静态资源。
 
-脚注适合补充解释，不打断正文阅读。这里有一个脚注引用[^ssg]，也有第二个脚注引用[^path]。点击脚注编号应该跳到页面底部的脚注内容，点击脚注后的返回箭头应该回到正文位置。
+同时，文章的创建时间也自然地被通过目录名中的 unix timestamp 维护起来，且可以实现文章自然地按时间顺序在目录下排序。
 
-[^ssg]: SSG 指 Static Site Generation。这个项目会在构建阶段预先生成 HTML，因此文章渲染逻辑应该尽量留在服务端构建流程中。
+## Icon
 
-[^path]: 路径重解析让作者可以在 Markdown 中自然引用 public 目录内的资源，而不用手动计算最终前端 URL。
+本站的 favicon 是这个：
 
-## 分隔线
+![favicon](../../favicon.svg)
 
-下面是一条水平分隔线。它适合在长文章里切分主题，但不应该替代标题结构。
+原图来自 [Yesicon](https://yesicon.app/hugeicons/cook-book)（MIT 协议），自行修改为黑色背景和白色主体。
+
+这是一本食谱书，寓意搞软件如烹饪，是纯粹的创造。因此这个博客除了技术内容之外应该也会整理一些原创食谱。
 
 ---
 
-这篇展示文档到这里结束。后续如果渲染器支持新的语法能力，可以继续在本文追加一个章节，并补充对应的构建测试。
+[^vike]: [vike](https://vike.dev) 是基于 vite 的元框架，有极高的自由度，不限制前端框架、渲染策略、后端框架和部署方式等
+
+[^SSG]: [Static Site Generator](https://developer.mozilla.org/zh-CN/docs/Glossary/SSG)，静态站点生成器
+
+[^DRY]: [Don't Repeat Yourself](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)，即不要重复自己，对本例来说就是标题写一次就够了

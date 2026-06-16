@@ -4,7 +4,10 @@ import path, { resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { promisify } from "node:util";
 
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeSanitize, {
+  defaultSchema,
+  type Options as SanitizeSchema,
+} from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import remarkCjkFriendly from "remark-cjk-friendly";
 import remarkGfm from "remark-gfm";
@@ -14,13 +17,22 @@ import { unified } from "unified";
 
 import rehypeCodeHighlight from "./plugins/codeHighlight";
 import rehypeHeadingId from "./plugins/headingId";
+import rehypeLinkTarget from "./plugins/linkTarget";
 import remarkUrlTransform from "./plugins/urlTransform";
 import type { Blog } from "./types";
 
 const execFileAsync = promisify(execFile);
 
-const sanitizeSchema = {
+const sanitizeSchema: SanitizeSchema = {
   ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    a: [
+      ...(defaultSchema.attributes?.["a"] ?? []),
+      ["target", "_blank"],
+      ["rel", "noopener", "noreferrer"],
+    ],
+  },
   clobberPrefix: "",
 };
 
@@ -31,6 +43,7 @@ export const contentHtml = async (blog: BlogFile) => {
     .use(remarkGfm)
     .use(remarkCjkFriendly)
     .use(remarkRehype)
+    .use(rehypeLinkTarget)
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeCodeHighlight)
     .use(rehypeHeadingId)

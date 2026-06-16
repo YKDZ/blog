@@ -89,6 +89,22 @@ test("带 title 的图片渲染为 img 标签并保留 title", async () => {
   );
 });
 
+test("列表续行图片渲染在列表项内", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content:
+      "- 条目文本\n  ![图片](public/blogs/1781573541062-test/assets/demo image.png)",
+  } satisfies BlogFile;
+
+  expect(String(await contentHtml(blog))).toContain(
+    '<li>条目文本\n<img src="/blogs/1781573541062-test/assets/demo%20image.png" alt="图片"></li>',
+  );
+});
+
 test("正文渲染不重复输出第一条标题", async () => {
   const blog = {
     filePath: testBlogPath,
@@ -103,6 +119,37 @@ test("正文渲染不重复输出第一条标题", async () => {
 
   expect(html).not.toContain("页面标题");
   expect(html).toContain('<h2 id="正文标题">正文标题</h2>');
+});
+
+test("站外链接默认在新标签页打开", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content: "[外部链接](https://example.com)",
+  } satisfies BlogFile;
+
+  expect(String(await contentHtml(blog))).toContain(
+    '<a href="https://example.com" target="_blank" rel="noopener noreferrer">外部链接</a>',
+  );
+});
+
+test("站内链接保持原地跳转", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content: "[内部链接](#小节)",
+  } satisfies BlogFile;
+
+  const html = String(await contentHtml(blog));
+
+  expect(html).toContain('<a href="#%E5%B0%8F%E8%8A%82">内部链接</a>');
+  expect(html).not.toContain('target="_blank"');
 });
 
 test("代码块使用 GitHub 深色主题高亮", async () => {
