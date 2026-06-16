@@ -1,14 +1,16 @@
+import { resolve } from "node:path";
+
 import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import { expect, test } from "vitest";
 
-import type { BlogFile } from "../lib";
+import { PUBLIC_DIR, type BlogFile } from "../lib";
 import urlTransform from "./urlTransform";
 
 const blog = {
-  filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+  filePath: resolve(PUBLIC_DIR, "blogs/1781573541062-test/index.md"),
   publicPath: "/blogs/1781573541062-test/index.md",
   time: 1781573541062,
   slug: "test",

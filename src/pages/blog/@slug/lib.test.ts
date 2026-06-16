@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { expect, test } from "vitest";
 
 import {
@@ -5,12 +7,15 @@ import {
   contentHtml,
   firstMarkdownHeading,
   normalizeMarkdownResourceUrls,
+  PUBLIC_DIR,
   publicUrlFromPath,
   slugFromDirName,
   stripFirstMarkdownHeading,
   type BlogFile,
 } from "./lib";
 import { headingIdFromText } from "./plugins/headingId";
+
+const testBlogPath = resolve(PUBLIC_DIR, "blogs/1781573541062-test/index.md");
 
 test("从带时间戳目录名中提取 slug", () => {
   expect(slugFromDirName("1781577996590-second-blog")).toBe("second-blog");
@@ -22,7 +27,7 @@ test("生成带章节 hash 的博客 URL", () => {
 
 test("把 public 内绝对文件路径转换成前端 URL", () => {
   expect(
-    publicUrlFromPath("/workspaces/blog/public/blogs/demo/assets/测试 图.png"),
+    publicUrlFromPath(resolve(PUBLIC_DIR, "blogs/demo/assets/测试 图.png")),
   ).toBe("/blogs/demo/assets/%E6%B5%8B%E8%AF%95%20%E5%9B%BE.png");
 });
 
@@ -55,7 +60,7 @@ test("提取并剥离第一条 Markdown 标题", () => {
 
 test("带空格文件名的图片渲染为 img 标签", async () => {
   const blog = {
-    filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+    filePath: testBlogPath,
     publicPath: "/blogs/1781573541062-test/index.md",
     time: 1781573541062,
     slug: "test",
@@ -70,7 +75,7 @@ test("带空格文件名的图片渲染为 img 标签", async () => {
 
 test("带 title 的图片渲染为 img 标签并保留 title", async () => {
   const blog = {
-    filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+    filePath: testBlogPath,
     publicPath: "/blogs/1781573541062-test/index.md",
     time: 1781573541062,
     slug: "test",
@@ -86,7 +91,7 @@ test("带 title 的图片渲染为 img 标签并保留 title", async () => {
 
 test("正文渲染不重复输出第一条标题", async () => {
   const blog = {
-    filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+    filePath: testBlogPath,
     publicPath: "/blogs/1781573541062-test/index.md",
     time: 1781573541062,
     slug: "test",
@@ -102,7 +107,7 @@ test("正文渲染不重复输出第一条标题", async () => {
 
 test("代码块使用 GitHub 深色主题高亮", async () => {
   const blog = {
-    filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+    filePath: testBlogPath,
     publicPath: "/blogs/1781573541062-test/index.md",
     time: 1781573541062,
     slug: "test",
@@ -121,7 +126,7 @@ test("代码块使用 GitHub 深色主题高亮", async () => {
 
 test("未知语言代码块退回普通文本高亮", async () => {
   const blog = {
-    filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+    filePath: testBlogPath,
     publicPath: "/blogs/1781573541062-test/index.md",
     time: 1781573541062,
     slug: "test",
@@ -137,7 +142,7 @@ test("未知语言代码块退回普通文本高亮", async () => {
 
 test("GFM 脚注引用和返回链接可以互相跳转", async () => {
   const blog = {
-    filePath: "/workspaces/blog/public/blogs/1781573541062-test/index.md",
+    filePath: testBlogPath,
     publicPath: "/blogs/1781573541062-test/index.md",
     time: 1781573541062,
     slug: "test",

@@ -23,5 +23,6 @@
   "[markdown]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  "chat.disableAIFeatures": true
+  "chat.disableAIFeatures": true,
+  "markdown.validate.enabled": false
 }
