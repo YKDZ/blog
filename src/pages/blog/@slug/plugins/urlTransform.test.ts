@@ -27,7 +27,7 @@ test("转换带时间戳目录的博客相对路径", async () => {
     .use(remarkRehype)
     .use(rehypeStringify)
     .process("[文章](../1781541231997-first-of-all/index.md)");
-  expect(String(result)).contains('href="/blog/first-of-all"');
+  expect(String(result)).contains('href="/blog/first-of-all/"');
 });
 
 test("转换只带 slug 目录的博客相对路径，并保留章节 hash", async () => {
@@ -40,7 +40,7 @@ test("转换只带 slug 目录的博客相对路径，并保留章节 hash", asy
     .use(rehypeStringify)
     .process("[文章](../second-blog/index.md#小节)");
   expect(String(result)).contains(
-    'href="/blog/second-blog#%E5%B0%8F%E8%8A%82"',
+    'href="/blog/second-blog/#%E5%B0%8F%E8%8A%82"',
   );
 });
 
@@ -53,7 +53,7 @@ test("转换以 public 开头的博客相对路径", async () => {
     .use(remarkRehype)
     .use(rehypeStringify)
     .process("[文章](public/blogs/1781577987795-first-of-all/index.md)");
-  expect(String(result)).contains('href="/blog/first-of-all"');
+  expect(String(result)).contains('href="/blog/first-of-all/"');
 });
 
 test("转换带 title 的博客路径引用并保留 title", async () => {
@@ -66,7 +66,7 @@ test("转换带 title 的博客路径引用并保留 title", async () => {
     .use(rehypeStringify)
     .process('[文章](../second-blog/index.md "说明文本")');
 
-  expect(String(result)).contains('href="/blog/second-blog"');
+  expect(String(result)).contains('href="/blog/second-blog/"');
   expect(String(result)).contains('title="说明文本"');
 });
 

@@ -60,7 +60,7 @@ pnpm dev
 └── index.md
 ```
 
-在写文章时，我不用考虑图片等静态文件的放置位置，可以自由地用 `public/a/b/c.png`、`./assets/a.png`、`../xxx/assets/b.png`、`../xxx/index.md#title` 等各种方式引用 `public` 目录中的静态资源和其他文章等。在渲染时，一个 `remark` 插件会完成目录的映射工作，将对文档的引用解析为 `/blog/slug#hashtag` 的形式，而将其他静态资源解析为相对于 `/` 的 url 形式，以便直接利用 Static Assets 机制引用打包好的静态资源。
+在写文章时，我不用考虑图片等静态文件的放置位置，可以自由地用 `public/a/b/c.png`、`./assets/a.png`、`../xxx/assets/b.png`、`../xxx/index.md#title` 等各种方式引用 `public` 目录中的静态资源和其他文章等。在渲染时，一个 `remark` 插件会完成目录的映射工作，将对文档的引用解析为 `/blog/slug/#hash` 的形式，而将其他静态资源解析为相对于 `/` 的 url 形式，以便直接利用 Static Assets 机制引用打包好的静态资源。
 
 同时，文章的创建时间也自然地被通过目录名中的 unix timestamp 维护起来，且可以实现文章自然地按时间顺序在目录下排序。
 

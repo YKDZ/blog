@@ -32,6 +32,15 @@ const sanitizeSchema: SanitizeSchema = {
       ["target", "_blank"],
       ["rel", "noopener", "noreferrer"],
     ],
+    img: [
+      ...(defaultSchema.attributes?.["img"] ?? []),
+      "height",
+      "loading",
+      "sizes",
+      "srcset",
+      "srcSet",
+      "width",
+    ],
   },
   clobberPrefix: "",
 };
@@ -73,7 +82,7 @@ export const slugFromDirName = (dirname: string): string => {
 };
 
 export const blogUrl = (slug: string, hash = ""): string => {
-  return `/blog/${slug}${hash}`;
+  return `/blog/${slug}/${hash}`;
 };
 
 const encodeUrlPath = (urlPath: string): string => {

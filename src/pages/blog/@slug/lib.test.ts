@@ -22,7 +22,7 @@ test("从带时间戳目录名中提取 slug", () => {
 });
 
 test("生成带章节 hash 的博客 URL", () => {
-  expect(blogUrl("second-blog", "#小节")).toBe("/blog/second-blog#小节");
+  expect(blogUrl("second-blog", "#小节")).toBe("/blog/second-blog/#小节");
 });
 
 test("把 public 内绝对文件路径转换成前端 URL", () => {
@@ -104,7 +104,29 @@ test("真实本地图片渲染为 WebP", async () => {
 
   expect(html).not.toContain("<a ");
   expect(html).toMatch(
-    /<img src="\/optimized-images\/blogs\/1781577987795-first-of-all\/assets\/%E7%BC%96%E8%BE%91%E5%99%A8\.[a-f0-9]{12}\.webp" alt="编辑器">/,
+    /src="\/optimized-images\/blogs\/1781577987795-first-of-all\/assets\/[a-f0-9]{12}\.672w\.webp"/,
+  );
+  expect(html).toContain(" 480w, ");
+  expect(html).toContain(" 640w, ");
+  expect(html).toContain(" 672w, ");
+  expect(html).toContain(" 768w, ");
+  expect(html).toContain('sizes="(max-width: 767px) 100vw, 672px"');
+  expect(html).toContain('width="1920"');
+  expect(html).toContain('height="1040"');
+});
+
+test("本地 SVG 图片渲染明确尺寸", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content: "![favicon](public/favicon.svg)",
+  } satisfies BlogFile;
+
+  expect(String(await contentHtml(blog))).toContain(
+    '<img src="/favicon.svg" alt="favicon" width="128" height="128">',
   );
 });
 

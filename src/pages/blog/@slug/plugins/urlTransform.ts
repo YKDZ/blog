@@ -5,7 +5,7 @@ import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 
 import {
-  optimizedImageForPath,
+  imageAssetForPath,
   PUBLIC_DIR,
   publicUrlFromPath,
 } from "../imageAssets";
@@ -109,14 +109,24 @@ const remarkUrlTransform: Plugin<[UrlTransformOptions], Root> = (options) => {
       if (node.type === "image") {
         transforms.push(
           (async () => {
-            const optimizedImage = await optimizedImageForPath(refPath);
+            const imageAsset = await imageAssetForPath(refPath);
 
-            if (!optimizedImage) {
+            if (!imageAsset) {
               node.url = `${publicUrlFromPath(refPath)}${query}${hash}`;
               return;
             }
 
-            node.url = `${optimizedImage.optimizedUrl}${query}${hash}`;
+            node.url = `${imageAsset.srcUrl}${query}${hash}`;
+            node.data = {
+              ...node.data,
+              hProperties: {
+                ...node.data?.hProperties,
+                width: imageAsset.width,
+                height: imageAsset.height,
+                srcset: imageAsset.srcSet,
+                sizes: imageAsset.sizes,
+              },
+            };
           })(),
         );
         return;

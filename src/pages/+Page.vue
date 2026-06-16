@@ -22,7 +22,7 @@ const formatDate = (time: number) => {
         :key="blog.slug"
         class="border border-(--page-border-soft) bg-(--page-surface) transition-colors duration-200 hover:border-(--page-border-hover)"
       >
-        <a :href="`/blog/${blog.slug}`" class="block px-5 py-4">
+        <a :href="`/blog/${blog.slug}/`" class="block px-5 py-4">
           <time class="block text-xs font-normal text-(--page-fg)">
             {{ formatDate(blog.time) }}
           </time>
