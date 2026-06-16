@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useData } from "vike-vue/useData";
+import { computed } from "vue";
 
 import BlogRenderer from "./BlogRenderer.vue";
 import { headingIdFromText } from "./plugins/headingId";
 import type { BlogPageData } from "./types";
 
 const data = useData<BlogPageData>();
+const titleId = computed(() => headingIdFromText(data.blog.title));
 
 const formatDate = (value: string) => {
   const [year, month, day] = new Date(value)
@@ -20,8 +22,8 @@ const formatDate = (value: string) => {
   <article class="md:pb-[50vh]">
     <header class="mb-10 border-b border-(--page-border-soft) pb-8 text-center">
       <h1
-        :id="headingIdFromText(data.blog.title)"
-        class="scroll-mt-16 text-3xl leading-tight font-semibold tracking-normal sm:text-4xl"
+        :id="titleId"
+        class="scroll-mt-[calc(var(--site-header-height)+0.5rem)] text-3xl leading-tight font-semibold tracking-normal sm:text-4xl"
       >
         {{ data.blog.title }}
       </h1>

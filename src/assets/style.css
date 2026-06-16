@@ -10,7 +10,9 @@
     --page-border-hover: #000000;
     --page-code-bg: #ffffff;
     --page-code-border: #dfd8d3;
+    --page-highlight-bg: #eee6df;
     --page-surface: #ffffff;
+    --site-header-height: 3.5rem;
   }
 
   :root[data-theme="dark"] {
@@ -21,11 +23,11 @@
     --page-border-hover: #f8f4e8;
     --page-code-bg: #211f1b;
     --page-code-border: #4a453d;
+    --page-highlight-bg: #2b2925;
     --page-surface: #211f1b;
   }
 
   html {
-    @apply scroll-pt-12;
     background: var(--page-bg);
     font-family:
       ui-sans-serif,
@@ -42,6 +44,7 @@
       sans-serif;
     overflow-x: clip;
     overflow-y: scroll;
+    scroll-padding-top: var(--site-header-height);
     scrollbar-gutter: stable;
   }
 
@@ -144,6 +147,25 @@
     margin-inline-start: 0.25rem;
   }
 
+  .heading-anchor {
+    background: transparent;
+    color: var(--page-border-soft) !important;
+    display: inline-block;
+    font-size: 0.7em;
+    font-weight: 600;
+    line-height: 1;
+    margin-inline-start: 0.35em;
+    min-width: 1em;
+    text-align: center;
+    text-decoration: none !important;
+    vertical-align: baseline;
+  }
+
+  .heading-anchor:hover,
+  .heading-anchor:focus-visible {
+    color: var(--page-border-hover) !important;
+  }
+
   @media (max-width: 767px) {
     .prose > p > img:only-child {
       box-sizing: border-box;
@@ -156,7 +178,7 @@
   }
 
   [data-preview-target="true"] {
-    outline: 1px solid var(--page-border-soft);
-    outline-offset: 0.25rem;
+    background: var(--page-highlight-bg);
+    outline: none;
   }
 }

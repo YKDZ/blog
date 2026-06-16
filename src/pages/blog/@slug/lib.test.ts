@@ -159,7 +159,25 @@ test("正文渲染不重复输出第一条标题", async () => {
   const html = String(await contentHtml(blog));
 
   expect(html).not.toContain("页面标题");
-  expect(html).toContain('<h2 id="正文标题">正文标题</h2>');
+  expect(html).toContain(
+    '<h2 id="正文标题">正文标题<a aria-label="复制此章节链接" class="heading-anchor" data-heading-anchor="" href="#正文标题">#</a></h2>',
+  );
+});
+
+test("脚注隐藏标题不追加复制锚点", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content: "正文[^1]\n\n[^1]: 脚注",
+  } satisfies BlogFile;
+
+  const html = String(await contentHtml(blog));
+
+  expect(html).toContain('id="footnotes"');
+  expect(html).not.toContain('href="#footnotes"');
 });
 
 test("站外链接默认在新标签页打开", async () => {

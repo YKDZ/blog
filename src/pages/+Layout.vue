@@ -71,7 +71,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="min-h-screen bg-(--page-bg) text-(--page-fg)">
-    <header class="sticky top-0 z-10 h-12 bg-(--page-bg)">
+    <header class="sticky top-0 z-10 h-(--site-header-height) bg-(--page-bg)">
       <div
         class="mx-auto flex h-full max-w-3xl items-center justify-between px-5"
       >

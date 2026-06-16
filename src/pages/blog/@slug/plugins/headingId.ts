@@ -47,13 +47,40 @@ export const headingIdFromText = (text: string): string => {
   return text.trim().toLowerCase().replace(/\s+/g, "-");
 };
 
+const classNames = (value: unknown): string[] => {
+  if (typeof value === "string") return value.split(/\s+/);
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  return [];
+};
+
+const shouldShowHeadingAnchor = (node: HastElement) => {
+  return !classNames(node.properties["className"]).includes("sr-only");
+};
+
 const rehypeHeadingId: Plugin = () => {
   return function (tree) {
     const addHeadingIds = (node: HastNode) => {
       if (isElement(node) && headingNames.has(node.tagName)) {
         const id = headingIdFromText(textContent(node));
 
-        if (id) node.properties["id"] = id;
+        if (id) {
+          node.properties["id"] = id;
+          if (shouldShowHeadingAnchor(node)) {
+            node.children.push({
+              type: "element",
+              tagName: "a",
+              properties: {
+                "aria-label": "复制此章节链接",
+                className: ["heading-anchor"],
+                "data-heading-anchor": "",
+                href: `#${id}`,
+              },
+              children: [{ type: "text", value: "#" }],
+            });
+          }
+        }
       }
 
       if (!hasChildren(node)) return;

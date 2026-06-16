@@ -19,6 +19,7 @@
     "typecheck": "tsc -b --noEmit && vue-tsc --build --noEmit"
   },
   "dependencies": {
+    "@vueuse/core": "^14.3.0",
     "rehype-sanitize": "^6.0.0",
     "rehype-stringify": "^10.0.1",
     "remark": "^15.0.1",

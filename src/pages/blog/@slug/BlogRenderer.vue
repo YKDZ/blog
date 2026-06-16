@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useClipboard } from "@vueuse/core";
 import { computed, nextTick, onMounted, ref } from "vue";
 
 import BlogContent from "./BlogContent.vue";
@@ -21,6 +22,7 @@ const activePreview = ref<ActivePreview>();
 const previewLayerReady = ref(false);
 const previewLeft = ref(0);
 const previewTop = ref(0);
+const { copy: copyToClipboard } = useClipboard({ legacy: true });
 
 const previewBySlug = computed(() => {
   return new Map(props.previews.map((preview) => [preview.slug, preview]));
@@ -84,6 +86,7 @@ const previewTargetFromEvent = (event: MouseEvent) => {
   const anchor = target.closest("a");
 
   if (!anchor || !contentEl.value?.contains(anchor)) return;
+  if (anchor.hasAttribute("data-heading-anchor")) return;
 
   const href = anchor.getAttribute("href");
 
@@ -129,6 +132,21 @@ const clearPreviewHighlight = () => {
   previewBodyEl.value
     ?.querySelector<HTMLElement>("[data-preview-target]")
     ?.removeAttribute("data-preview-target");
+};
+
+const copyHeadingUrl = async (anchor: HTMLAnchorElement) => {
+  const href = anchor.getAttribute("href");
+
+  if (!href) return false;
+
+  const url = new URL(href, window.location.href);
+
+  try {
+    await copyToClipboard(url.href);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const scrollPreviewToHash = async (hash: string) => {
@@ -183,7 +201,23 @@ const onMouseLeave = () => {
   activePreview.value = undefined;
 };
 
-const onClick = () => {
+const onClick = (event: MouseEvent) => {
+  const target = event.target;
+
+  if (target instanceof Element) {
+    const headingAnchor = target.closest<HTMLAnchorElement>(
+      "a[data-heading-anchor]",
+    );
+
+    if (headingAnchor && contentEl.value?.contains(headingAnchor)) {
+      event.preventDefault();
+
+      void copyHeadingUrl(headingAnchor).then((copied) => {
+        if (!copied) window.location.href = headingAnchor.href;
+      });
+    }
+  }
+
   activePreview.value = undefined;
 };
 
@@ -218,7 +252,7 @@ onMounted(() => {
       </header>
       <div
         ref="previewBodyEl"
-        class="max-h-96 scroll-pt-12 overflow-hidden px-4 py-3"
+        class="max-h-96 scroll-pt-(--site-header-height) overflow-hidden px-4 py-3"
       >
         <BlogContent :html="activePreview.html" />
       </div>
