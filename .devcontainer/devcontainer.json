@@ -1,0 +1,41 @@
+{
+  "name": "Blog",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:4-24-trixie",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "oxc.oxc-vscode",
+        "Vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "vitest.explorer"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+        "oxc.fmt.configPath": "oxfmt.config.ts",
+        "oxc.trace.server": "messages",
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true,
+        "editor.codeActionsOnSave": {
+          "source.format.oxc": "always",
+          "source.fixAll": "always"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        },
+        "[vue]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        }
+      }
+    }
+  }
+}

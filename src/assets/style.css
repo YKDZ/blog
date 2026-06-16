@@ -1,0 +1,97 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@layer base {
+  :root {
+    --page-bg: #faf7f5;
+    --page-fg: #000000;
+    --page-border: #000000;
+    --page-border-soft: #dfd8d3;
+    --page-border-hover: #000000;
+    --page-code-bg: #ffffff;
+    --page-code-border: #dfd8d3;
+    --page-surface: #ffffff;
+  }
+
+  :root[data-theme="dark"] {
+    --page-bg: #171614;
+    --page-fg: #f8f4e8;
+    --page-border: #f8f4e8;
+    --page-border-soft: #4a453d;
+    --page-border-hover: #f8f4e8;
+    --page-code-bg: #211f1b;
+    --page-code-border: #4a453d;
+    --page-surface: #211f1b;
+  }
+
+  html {
+    @apply scroll-pt-12;
+    background: var(--page-bg);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      "PingFang SC",
+      "Hiragino Sans GB",
+      "Microsoft YaHei",
+      "Noto Sans CJK SC",
+      "Source Han Sans SC",
+      "WenQuanYi Micro Hei",
+      sans-serif;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background: var(--page-bg);
+    color: var(--page-fg);
+  }
+}
+
+@layer components {
+  .theme-option {
+    background: var(--page-surface);
+    color: var(--page-fg);
+  }
+
+  :root[data-theme-mode="light"] .theme-option[data-theme-option="light"],
+  :root[data-theme-mode="dark"] .theme-option[data-theme-option="dark"],
+  :root[data-theme-mode="auto"] .theme-option[data-theme-option="auto"] {
+    background: var(--page-fg);
+    color: var(--page-bg);
+  }
+
+  .prose pre.shiki {
+    background: #0d1117 !important;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    border-radius: 0 !important;
+    overflow-x: auto;
+  }
+
+  .prose pre.shiki code {
+    display: block;
+    min-width: max-content;
+  }
+
+  .prose pre.shiki .line {
+    display: inline-block;
+    min-height: 1.5em;
+  }
+
+  .prose :not(pre) > code {
+    background: var(--page-code-bg);
+    border: 1px solid var(--page-code-border);
+    border-radius: 0;
+    color: var(--page-fg);
+    font-weight: 500;
+    padding: 0.08em 0.28em;
+  }
+
+  .prose :not(pre) > code::before,
+  .prose :not(pre) > code::after {
+    content: none !important;
+  }
+}
