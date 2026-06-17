@@ -179,14 +179,11 @@
     .prose {
       --prose-page-inline-padding: 1.25rem;
       --prose-list-indent: 1.625em;
+      --prose-list-item-padding: 0.4em;
     }
 
     .prose.prose-xl :where(ul, ol) {
       padding-inline-start: var(--prose-list-indent);
-    }
-
-    .prose.prose-xl :where(ul > li, ol > li) {
-      padding-inline-start: 0;
     }
 
     .prose > p > img:only-child {
@@ -204,7 +201,11 @@
       display: block;
       height: auto;
       margin-inline-start: calc(
-        -1 * (var(--prose-page-inline-padding) + var(--prose-list-indent))
+        -1 *
+          (
+            var(--prose-page-inline-padding) + var(--prose-list-indent) +
+              var(--prose-list-item-padding)
+          )
       );
       max-width: none;
       width: 100vw;
