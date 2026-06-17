@@ -4,6 +4,7 @@ import path, { resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { promisify } from "node:util";
 
+import type { Content, Root } from "mdast";
 import rehypeSanitize, {
   defaultSchema,
   type Options as SanitizeSchema,
@@ -13,8 +14,9 @@ import remarkCjkFriendly from "remark-cjk-friendly";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { unified } from "unified";
+import { unified, type Plugin } from "unified";
 
+import { normalizeMarkdownResourceUrls } from "./markdownResources";
 import rehypeCodeHighlight from "./plugins/codeHighlight";
 import rehypeHeadingId from "./plugins/headingId";
 import rehypeLinkTarget from "./plugins/linkTarget";
@@ -45,11 +47,35 @@ const sanitizeSchema: SanitizeSchema = {
   clobberPrefix: "",
 };
 
+const textContent = (node: Content): string => {
+  if ("value" in node && typeof node.value === "string") return node.value;
+  if ("children" in node && Array.isArray(node.children)) {
+    return node.children.map(textContent).join("");
+  }
+
+  return "";
+};
+
+const markdownAst = (content: string): Root => {
+  const processor = unified().use(remarkParse).use(remarkGfm);
+
+  return processor.parse(normalizeMarkdownResourceUrls(content)) as Root;
+};
+
+const remarkRemoveFirstHeading: Plugin<[], Root> = () => {
+  return function (tree) {
+    const index = tree.children.findIndex((child) => child.type === "heading");
+
+    if (index !== -1) tree.children.splice(index, 1);
+  };
+};
+
 export const contentHtml = async (blog: BlogFile) => {
   const html = await unified()
     .use(remarkParse)
-    .use(remarkUrlTransform, { blog })
     .use(remarkGfm)
+    .use(remarkRemoveFirstHeading)
+    .use(remarkUrlTransform, { blog })
     .use(remarkCjkFriendly)
     .use(remarkRehype)
     .use(rehypeLinkTarget)
@@ -57,9 +83,7 @@ export const contentHtml = async (blog: BlogFile) => {
     .use(rehypeCodeHighlight)
     .use(rehypeHeadingId)
     .use(rehypeStringify)
-    .process(
-      normalizeMarkdownResourceUrls(stripFirstMarkdownHeading(blog.content)),
-    );
+    .process(normalizeMarkdownResourceUrls(blog.content));
 
   return html;
 };
@@ -92,28 +116,32 @@ const encodeUrlPath = (urlPath: string): string => {
     .join("/");
 };
 
-export const normalizeMarkdownResourceUrls = (content: string): string => {
-  return content.replace(
-    /(!?\[[^\]\n]*\]\()([^)<> \t\n][^)\n]*?)(\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?(\))/g,
-    (
-      _,
-      open: string,
-      url: string,
-      title: string | undefined,
-      close: string,
-    ) => {
-      return `${open}${url.trimEnd().replace(/\s+/g, "%20")}${title ?? ""}${close}`;
-    },
-  );
-};
+export { normalizeMarkdownResourceUrls };
 
 export const firstMarkdownHeading = (content: string): string | undefined => {
-  const heading = content.match(/^#{1,6}\s+(?<title>.+?)\s*#*\s*$/m);
-  return heading?.groups?.["title"]?.trim();
+  const heading = markdownAst(content).children.find(
+    (child) => child.type === "heading",
+  );
+
+  if (!heading) return undefined;
+
+  const title = textContent(heading).trim();
+
+  return title || undefined;
 };
 
 export const stripFirstMarkdownHeading = (content: string): string => {
-  return content.replace(/^#{1,6}\s+.+?\s*#*\s*(?:\r?\n|$)/m, "");
+  const tree = markdownAst(content);
+  const firstHeading = tree.children.find((child) => child.type === "heading");
+
+  if (!firstHeading?.position) return content;
+
+  return [
+    content.slice(0, firstHeading.position.start.offset),
+    content.slice(firstHeading.position.end.offset),
+  ]
+    .join("")
+    .replace(/^\s*\r?\n/, "");
 };
 
 export const publicUrlFromPath = (filePath: string): string => {

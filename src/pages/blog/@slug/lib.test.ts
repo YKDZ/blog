@@ -51,11 +51,26 @@ test("规范化 Markdown 资源路径时保留 title 文本", () => {
   ).toBe('![图片](public/blogs/a/assets/demo%20image.png "说明文本")');
 });
 
+test("规范化 Markdown 资源路径时跳过独立 URL", () => {
+  expect(
+    normalizeMarkdownResourceUrls(
+      "![站外](https://example.com/demo image.png)\n[章节](#demo title)",
+    ),
+  ).toBe("![站外](https://example.com/demo image.png)\n[章节](#demo title)");
+});
+
 test("提取并剥离第一条 Markdown 标题", () => {
   const content = "# 页面标题\n\n## 正文标题\n\n内容";
 
   expect(firstMarkdownHeading(content)).toBe("页面标题");
   expect(stripFirstMarkdownHeading(content)).toBe("## 正文标题\n\n内容");
+});
+
+test("标题提取尊重 Markdown 转义标点", () => {
+  expect(firstMarkdownHeading("# 标题 \\_ \\* \\\\")).toBe("标题 _ * \\");
+  expect(firstMarkdownHeading(String.raw`# 我的博客 <\_>`)).toBe(
+    "我的博客 <_>",
+  );
 });
 
 test("带空格文件名的图片渲染为 img 标签", async () => {
@@ -160,7 +175,7 @@ test("正文渲染不重复输出第一条标题", async () => {
 
   expect(html).not.toContain("页面标题");
   expect(html).toContain(
-    '<h2 id="正文标题">正文标题<a aria-label="复制此章节链接" class="heading-anchor" data-heading-anchor="" href="#正文标题">#</a></h2>',
+    '<h2 id="正文标题">正文标题<a aria-label="复制此章节链接" aria-hidden="true" class="heading-anchor" data-heading-anchor="" href="#正文标题" tabindex="-1"></a></h2>',
   );
 });
 
@@ -176,8 +191,26 @@ test("脚注隐藏标题不追加复制锚点", async () => {
 
   const html = String(await contentHtml(blog));
 
-  expect(html).toContain('id="footnotes"');
+  expect(html).toContain(
+    '<h2 class="sr-only" id="footnotes" aria-hidden="true" hidden>Footnotes</h2>',
+  );
   expect(html).not.toContain('href="#footnotes"');
+});
+
+test("尊重转义下划线", async () => {
+  const blog = {
+    filePath: testBlogPath,
+    publicPath: "/blogs/1781573541062-test/index.md",
+    time: 1781573541062,
+    slug: "test",
+    title: "test",
+    content: String.raw`复 \_ya\_ 古`,
+  } satisfies BlogFile;
+
+  const html = String(await contentHtml(blog));
+
+  expect(html).toContain("<p>复 _ya_ 古</p>");
+  expect(html).not.toContain("<em>ya</em>");
 });
 
 test("站外链接默认在新标签页打开", async () => {

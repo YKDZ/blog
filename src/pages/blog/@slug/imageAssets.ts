@@ -4,7 +4,14 @@ import { mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
 import path, { dirname, extname, resolve, sep } from "node:path";
 import { cwd } from "node:process";
 
+import type { Image, Root } from "mdast";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
 import sharp from "sharp";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
+
+import { normalizeMarkdownResourceUrls } from "./markdownResources";
 
 export const PUBLIC_DIR = resolve(cwd(), "public");
 const BLOGS_DIR = resolve(PUBLIC_DIR, "blogs");
@@ -13,6 +20,7 @@ const rasterImageExtensions = new Set([".jpg", ".jpeg", ".png"]);
 const responsiveImageWidths = [480, 640, 672, 768, 1024, 1280, 1600, 1920];
 const imageSizes = "(max-width: 767px) 100vw, 672px";
 const fallbackImageWidth = 672;
+const URL_WITH_SCHEME = /^[a-z][a-z\d+.-]*:/i;
 
 export type BlogImageAsset = {
   srcUrl: string;
@@ -155,29 +163,29 @@ const resolveMarkdownReference = (fromFilePath: string, pathname: string) => {
 
 const referencedImagePaths = (fromFilePath: string, content: string) => {
   const imagePaths = new Set<string>();
-  const pattern =
-    /!\[[^\]\n]*\]\(([^)<> \t\n][^)\n]*?)(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?\)/g;
+  const tree = unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .parse(normalizeMarkdownResourceUrls(content)) as Root;
 
-  for (const match of content.matchAll(pattern)) {
-    const url = match[1]?.trimEnd();
-
-    if (!url) continue;
+  visit(tree, "image", (node: Image) => {
+    const url = node.url.trimEnd();
 
     const { pathname } = splitUrl(url);
 
-    if (!pathname || /^[a-z][a-z\d+.-]*:/i.test(pathname)) continue;
+    if (!pathname || URL_WITH_SCHEME.test(pathname)) return;
     if (
       pathname.startsWith("#") ||
       pathname.startsWith("/") ||
       pathname.startsWith("//")
     ) {
-      continue;
+      return;
     }
 
     imagePaths.add(
       resolveMarkdownReference(fromFilePath, decodePathname(pathname)),
     );
-  }
+  });
 
   return imagePaths;
 };

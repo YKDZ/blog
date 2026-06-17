@@ -162,6 +162,14 @@
     vertical-align: baseline;
   }
 
+  .heading-anchor::before {
+    content: "#";
+  }
+
+  .heading-anchor[data-copied="true"]::before {
+    content: "✓";
+  }
+
   .heading-anchor:hover,
   .heading-anchor:focus-visible {
     color: var(--page-border-hover) !important;

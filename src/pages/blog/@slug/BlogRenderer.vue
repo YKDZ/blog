@@ -135,12 +135,10 @@ const clearPreviewHighlight = () => {
 };
 
 const resetHeadingAnchor = (anchor: HTMLAnchorElement) => {
-  anchor.textContent = "#";
   delete anchor.dataset.copied;
 };
 
 const markHeadingAnchorCopied = (anchor: HTMLAnchorElement) => {
-  anchor.textContent = "✓";
   anchor.dataset.copied = "true";
 
   useEventListener(anchor, "mouseleave", () => resetHeadingAnchor(anchor), {

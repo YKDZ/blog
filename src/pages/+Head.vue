@@ -2,7 +2,10 @@
 import { usePageContext } from "vike-vue/usePageContext";
 import { computed } from "vue";
 
-import { SITE_NAME, SITE_ORIGIN } from "@/site";
+import { SITE_NAME } from "@/site";
+import { homeStructuredData, jsonLd, siteUrl } from "@/structuredData";
+
+import type { Blog } from "./blog/@slug/types";
 
 type ThemeMode = "light" | "dark" | "auto";
 
@@ -11,7 +14,14 @@ const canonicalUrl = computed(() => {
   const pathname =
     typeof pageContext.urlPathname === "string" ? pageContext.urlPathname : "/";
 
-  return new URL(pathname, SITE_ORIGIN).href;
+  return siteUrl(pathname);
+});
+const homeJsonLd = computed(() => {
+  const data = pageContext.data as { blogs?: Blog[] } | undefined;
+
+  if (pageContext.urlPathname !== "/" || !data?.blogs) return undefined;
+
+  return jsonLd(homeStructuredData(data.blogs));
 });
 
 function initializeTheme() {
@@ -38,6 +48,11 @@ function initializeTheme() {
 }
 
 const themeScript = `(${initializeTheme.toString()})();`;
+const clarityScript = `(function(c,l,a,r,i,t,y){
+  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window, document, "clarity", "script", "x8af8llwcw");`;
 </script>
 
 <template>
@@ -56,5 +71,11 @@ const themeScript = `(${initializeTheme.toString()})();`;
     href="/atom.xml"
   />
   <meta name="robots" content="index, follow" />
+  <script type="text/javascript" v-html="clarityScript"></script>
+  <script
+    v-if="homeJsonLd"
+    type="application/ld+json"
+    v-html="homeJsonLd"
+  ></script>
   <script v-html="themeScript"></script>
 </template>

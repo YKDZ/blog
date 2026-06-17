@@ -2,47 +2,18 @@
 import { useData } from "vike-vue/useData";
 import { computed } from "vue";
 
-import { SITE_NAME, SITE_ORIGIN } from "@/site";
+import { blogPostingStructuredData, jsonLd, siteUrl } from "@/structuredData";
 
 import type { BlogPageData } from "./types";
 
 const data = useData<BlogPageData>();
 
-const articleUrl = computed(() => {
-  return new URL(`/blog/${data.blog.slug}/`, SITE_ORIGIN).href;
-});
-
 const markdownUrl = computed(() => {
-  return new URL(data.blog.markdownPath, SITE_ORIGIN).href;
+  return siteUrl(data.blog.markdownPath);
 });
 
-const jsonLd = computed(() => {
-  return JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: data.blog.title,
-    datePublished: new Date(data.blog.time).toISOString(),
-    dateModified:
-      data.blog.latestModifiedAt ?? new Date(data.blog.time).toISOString(),
-    author: {
-      "@type": "Person",
-      name: "YKDZ",
-    },
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-    },
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": articleUrl.value,
-    },
-    url: articleUrl.value,
-    isPartOf: {
-      "@type": "Blog",
-      name: SITE_NAME,
-      url: SITE_ORIGIN,
-    },
-  });
+const articleJsonLd = computed(() => {
+  return jsonLd(blogPostingStructuredData(data.blog));
 });
 </script>
 
@@ -53,5 +24,5 @@ const jsonLd = computed(() => {
     title="Markdown source"
     :href="markdownUrl"
   />
-  <script type="application/ld+json" v-html="jsonLd"></script>
+  <script type="application/ld+json" v-html="articleJsonLd"></script>
 </template>

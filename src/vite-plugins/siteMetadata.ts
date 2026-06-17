@@ -2,7 +2,18 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
 
+import { XMLParser } from "fast-xml-parser";
 import { SyntaxValidator } from "fast-xml-validator";
+import type {
+  Element,
+  ElementContent,
+  Root as HastRoot,
+  RootContent,
+} from "hast";
+import rehypeParse from "rehype-parse";
+import rehypeStringify from "rehype-stringify";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
 import type { Plugin } from "vite";
 
 import { blogUrl, blogs, contentHtml } from "../pages/blog/@slug/lib";
@@ -72,84 +83,134 @@ const absolutizeSrcset = (value: string, baseUrl: string) => {
     .join(", ");
 };
 
-const atomContentGlobalAttributes = new Set(["id", "title"]);
-const atomContentTagAttributes = new Map([
+const htmlProcessor = unified().use(rehypeParse, { fragment: true });
+const htmlStringifier = unified().use(rehypeStringify);
+
+const atomContentGlobalProperties = new Set(["id", "title"]);
+const atomContentTagProperties = new Map([
   ["a", new Set(["href"])],
-  ["img", new Set(["alt", "height", "sizes", "src", "srcset", "width"])],
+  ["img", new Set(["alt", "height", "sizes", "src", "srcSet", "width"])],
 ]);
 
 export const absolutizeHtmlUrls = (html: string, baseUrl: string) => {
-  return html.replaceAll(
-    /\s(?<attribute>href|src|srcset)=["'](?<value>[^"']*)["']/gi,
-    (_match, attribute: string, value: string) => {
-      const normalizedValue =
-        attribute.toLowerCase() === "srcset"
-          ? absolutizeSrcset(value, baseUrl)
-          : absolutizeUrl(value, baseUrl);
+  const tree = htmlProcessor.parse(html) as HastRoot;
 
-      return ` ${attribute}="${normalizedValue}"`;
-    },
-  );
+  visit(tree, "element", (node) => {
+    const { properties } = node;
+
+    if (typeof properties["href"] === "string") {
+      properties["href"] = absolutizeUrl(properties["href"], baseUrl);
+    }
+
+    if (typeof properties["src"] === "string") {
+      properties["src"] = absolutizeUrl(properties["src"], baseUrl);
+    }
+
+    if (typeof properties["srcSet"] === "string") {
+      properties["srcSet"] = absolutizeSrcset(properties["srcSet"], baseUrl);
+    }
+  });
+
+  return htmlStringifier.stringify(tree);
 };
 
-const isAllowedAtomContentAttribute = (tagName: string, attribute: string) => {
-  const normalizedAttribute = attribute.toLowerCase();
+const isHeadingAnchor = (node: Element) => {
+  return node.tagName === "a" && "dataHeadingAnchor" in node.properties;
+};
 
+const isHiddenElement = (node: Element) => {
+  return "hidden" in node.properties;
+};
+
+const isAllowedAtomContentProperty = (tagName: string, property: string) => {
   return (
-    atomContentGlobalAttributes.has(normalizedAttribute) ||
-    (atomContentTagAttributes.get(tagName)?.has(normalizedAttribute) ?? false)
+    atomContentGlobalProperties.has(property) ||
+    (atomContentTagProperties.get(tagName)?.has(property) ?? false)
   );
 };
 
-const cleanHtmlAttributesForAtom = (attributes: string, tagName: string) => {
-  const cleanAttributes: string[] = [];
-  const pattern =
-    /(?<name>[\w:-]+)(?:=(?<quote>["'])(?<quoted>.*?)\k<quote>|=(?<unquoted>[^\s>]+))?/g;
+const cleanAtomContentProperties = (node: Element, baseUrl: string) => {
+  const tagName = node.tagName.toLowerCase();
+  const properties: Element["properties"] = {};
 
-  for (const match of attributes.matchAll(pattern)) {
-    const name = match.groups?.["name"];
+  for (const [property, value] of Object.entries(node.properties)) {
+    if (!isAllowedAtomContentProperty(tagName, property)) continue;
 
-    if (!name || !isAllowedAtomContentAttribute(tagName, name)) continue;
+    if (property === "href" && typeof value === "string") {
+      properties[property] = absolutizeUrl(value, baseUrl);
+      continue;
+    }
 
-    const value = match.groups?.["quoted"] ?? match.groups?.["unquoted"];
+    if (property === "src" && typeof value === "string") {
+      properties[property] = absolutizeUrl(value, baseUrl);
+      continue;
+    }
 
-    if (value === undefined) continue;
+    if (property === "srcSet" && typeof value === "string") {
+      properties[property] = absolutizeSrcset(value, baseUrl);
+      continue;
+    }
 
-    cleanAttributes.push(`${name.toLowerCase()}="${value}"`);
+    properties[property] = value;
   }
 
-  return cleanAttributes.length > 0 ? ` ${cleanAttributes.join(" ")}` : "";
+  node.tagName = tagName;
+  node.properties = properties;
+};
+
+const cleanAtomContentChildren = <T extends ElementContent | RootContent>(
+  children: T[],
+  baseUrl: string,
+): T[] => {
+  const nextChildren: T[] = [];
+
+  for (const child of children) {
+    if (child.type !== "element") {
+      nextChildren.push(child);
+      continue;
+    }
+
+    if (isHeadingAnchor(child) || isHiddenElement(child)) continue;
+
+    cleanAtomContentProperties(child, baseUrl);
+    child.children = cleanAtomContentChildren(child.children, baseUrl);
+
+    nextChildren.push(child);
+  }
+
+  return nextChildren;
 };
 
 export const atomContentHtml = (html: string, baseUrl: string) => {
-  return absolutizeHtmlUrls(
-    html
-      .replaceAll(
-        /<a\b[^>]*\sdata-heading-anchor(?:=["'][^"']*["'])?[^>]*>[\s\S]*?<\/a>/gi,
-        "",
-      )
-      .replaceAll(
-        /<(?<closing>\/?)(?<tagName>[a-z][\w:-]*)(?<attributes>[^>]*)>/gi,
-        (match, closing: string, tagName: string, attributes: string) => {
-          if (closing) return `</${tagName.toLowerCase()}>`;
+  const tree = htmlProcessor.parse(html) as HastRoot;
+  tree.children = cleanAtomContentChildren(tree.children, baseUrl);
 
-          return `<${tagName.toLowerCase()}${cleanHtmlAttributesForAtom(attributes, tagName.toLowerCase())}>`;
-        },
-      ),
-    baseUrl,
-  );
+  return htmlStringifier.stringify(tree);
 };
 
-const textContentForElement = (xml: string, element: string) => {
-  const match = xml.match(
-    new RegExp(`<${element}(?:\\s[^>]*)?>(?<content>[\\s\\S]*?)</${element}>`),
-  );
+const xmlParser = new XMLParser({
+  allowBooleanAttributes: true,
+  attributeNamePrefix: "@_",
+  ignoreAttributes: false,
+});
 
-  return match?.groups?.["content"];
+const asArray = <T>(value: T | T[] | undefined): T[] => {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
 };
 
-const countElements = (xml: string, element: string) => {
-  return xml.match(new RegExp(`<${element}(?:\\s|>)`, "g"))?.length ?? 0;
+const textContent = (value: unknown) => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (!value || typeof value !== "object") return undefined;
+
+  const text = (value as { "#text"?: unknown })["#text"];
+
+  return typeof text === "string" ? text : undefined;
+};
+
+const hasExactlyOne = (value: unknown) => {
+  return value !== undefined && !Array.isArray(value);
 };
 
 export const validateAtomXml = (xml: string) => {
@@ -160,44 +221,100 @@ export const validateAtomXml = (xml: string) => {
     );
   }
 
-  const requiredSnippets = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<feed xmlns="http://www.w3.org/2005/Atom"',
-    'xml:base="https://ykdz.me/"',
-    `xml:lang="${SITE_LANGUAGE}"`,
-    '<link href="https://ykdz.me/atom.xml" rel="self" type="application/atom+xml" />',
-  ];
+  const document = xmlParser.parse(xml) as {
+    "?xml"?: {
+      "@_version"?: string;
+      "@_encoding"?: string;
+    };
+    feed?: {
+      "@_xmlns"?: string;
+      "@_xml:base"?: string;
+      "@_xml:lang"?: string;
+      id?: unknown;
+      title?: unknown;
+      updated?: unknown;
+      link?: unknown;
+      entry?: unknown;
+    };
+  };
+  const feed = document.feed;
 
-  for (const snippet of requiredSnippets) {
-    if (!xml.includes(snippet)) {
-      throw new Error(`Invalid Atom feed: missing ${snippet}`);
-    }
+  if (
+    document["?xml"]?.["@_version"] !== "1.0" ||
+    document["?xml"]?.["@_encoding"] !== "UTF-8"
+  ) {
+    throw new Error(
+      'Invalid Atom feed: missing <?xml version="1.0" encoding="UTF-8"?>',
+    );
+  }
+
+  if (!feed) throw new Error("Invalid Atom feed: missing feed");
+  if (feed["@_xmlns"] !== "http://www.w3.org/2005/Atom") {
+    throw new Error("Invalid Atom feed: missing Atom namespace");
+  }
+  if (feed["@_xml:base"] !== "https://ykdz.me/") {
+    throw new Error('Invalid Atom feed: missing xml:base="https://ykdz.me/"');
+  }
+  if (feed["@_xml:lang"] !== SITE_LANGUAGE) {
+    throw new Error(`Invalid Atom feed: missing xml:lang="${SITE_LANGUAGE}"`);
+  }
+
+  const selfLink = asArray(feed.link).find((link) => {
+    if (!link || typeof link !== "object") return false;
+
+    const attributes = link as {
+      "@_href"?: unknown;
+      "@_rel"?: unknown;
+      "@_type"?: unknown;
+    };
+
+    return (
+      attributes["@_href"] === "https://ykdz.me/atom.xml" &&
+      attributes["@_rel"] === "self" &&
+      attributes["@_type"] === "application/atom+xml"
+    );
+  });
+
+  if (!selfLink) {
+    throw new Error("Invalid Atom feed: missing self link");
   }
 
   for (const element of ["id", "title", "updated"]) {
-    if (countElements(xml, element) === 0) {
+    if (!hasExactlyOne(feed[element as keyof typeof feed])) {
       throw new Error(`Invalid Atom feed: missing ${element}`);
     }
   }
 
-  const feedUpdated = textContentForElement(xml, "updated");
+  const feedUpdated = textContent(feed.updated);
   if (!feedUpdated || !rfc3339DateTime.test(feedUpdated)) {
     throw new Error(`Invalid Atom feed: updated is not RFC3339`);
   }
 
-  const entries = xml.match(/<entry>[\s\S]*?<\/entry>/g) ?? [];
+  const entries = asArray(feed.entry);
   const ids = new Set<string>();
 
   for (const entry of entries) {
+    if (!entry || typeof entry !== "object") {
+      throw new Error("Invalid Atom entry: expected object");
+    }
+
+    const entryObject = entry as {
+      id?: unknown;
+      title?: unknown;
+      updated?: unknown;
+      published?: unknown;
+      content?: unknown;
+    };
+
     for (const element of ["id", "title", "updated", "content"]) {
-      if (countElements(entry, element) !== 1) {
+      if (!hasExactlyOne(entryObject[element as keyof typeof entryObject])) {
         throw new Error(`Invalid Atom entry: expected one ${element}`);
       }
     }
 
-    const id = textContentForElement(entry, "id");
-    const updated = textContentForElement(entry, "updated");
-    const published = textContentForElement(entry, "published");
+    const id = textContent(entryObject.id);
+    const updated = textContent(entryObject.updated);
+    const published = textContent(entryObject.published);
 
     if (!id) throw new Error("Invalid Atom entry: missing id text");
     if (ids.has(id)) throw new Error(`Invalid Atom feed: duplicate id ${id}`);
@@ -211,7 +328,12 @@ export const validateAtomXml = (xml: string) => {
       throw new Error(`Invalid Atom entry: published is not RFC3339`);
     }
 
-    if (!entry.includes('<content type="html">')) {
+    const content = entryObject.content;
+    if (
+      !content ||
+      typeof content !== "object" ||
+      (content as { "@_type"?: unknown })["@_type"] !== "html"
+    ) {
       throw new Error("Invalid Atom entry: content must be escaped HTML");
     }
   }

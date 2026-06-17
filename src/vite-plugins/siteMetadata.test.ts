@@ -57,6 +57,7 @@ test("生成适合 feed reader 的 Atom 正文 HTML", () => {
     atomContentHtml(
       [
         '<h2 id="背景" class="heading">背景<a aria-label="复制此章节链接" class="heading-anchor" data-heading-anchor="" href="#背景">#</a></h2>',
+        '<h2 class="sr-only" id="footnotes" aria-hidden="true" hidden>Footnotes</h2>',
         '<pre class="shiki" style="color:red" tabindex="0"><code><span class="line" style="color:blue">pnpm build</span></code></pre>',
         '<a href="/blog/first-of-all/" target="_blank" rel="noopener noreferrer" data-demo="x">文章</a>',
         '<img class="picture" src="/favicon.svg" alt="favicon" width="128" height="128" loading="lazy">',

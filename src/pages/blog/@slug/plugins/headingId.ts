@@ -59,6 +59,13 @@ const shouldShowHeadingAnchor = (node: HastElement) => {
   return !classNames(node.properties["className"]).includes("sr-only");
 };
 
+const hideAssistiveHeading = (node: HastElement) => {
+  if (!classNames(node.properties["className"]).includes("sr-only")) return;
+
+  node.properties["aria-hidden"] = "true";
+  node.properties["hidden"] = true;
+};
+
 const rehypeHeadingId: Plugin = () => {
   return function (tree) {
     const addHeadingIds = (node: HastNode) => {
@@ -67,17 +74,20 @@ const rehypeHeadingId: Plugin = () => {
 
         if (id) {
           node.properties["id"] = id;
+          hideAssistiveHeading(node);
           if (shouldShowHeadingAnchor(node)) {
             node.children.push({
               type: "element",
               tagName: "a",
               properties: {
                 "aria-label": "复制此章节链接",
+                "aria-hidden": "true",
                 className: ["heading-anchor"],
                 "data-heading-anchor": "",
                 href: `#${id}`,
+                tabIndex: -1,
               },
-              children: [{ type: "text", value: "#" }],
+              children: [],
             });
           }
         }
