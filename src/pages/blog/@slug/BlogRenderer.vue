@@ -134,6 +134,16 @@ const clearPreviewHighlight = () => {
     ?.removeAttribute("data-preview-target");
 };
 
+const resetHeadingAnchor = (anchor: HTMLAnchorElement) => {
+  anchor.textContent = "#";
+  delete anchor.dataset.copied;
+};
+
+const markHeadingAnchorCopied = (anchor: HTMLAnchorElement) => {
+  anchor.textContent = "✓";
+  anchor.dataset.copied = "true";
+};
+
 const copyHeadingUrl = async (anchor: HTMLAnchorElement) => {
   const href = anchor.getAttribute("href");
 
@@ -143,6 +153,7 @@ const copyHeadingUrl = async (anchor: HTMLAnchorElement) => {
 
   try {
     await copyToClipboard(url.href);
+    markHeadingAnchorCopied(anchor);
     return true;
   } catch {
     return false;
@@ -201,6 +212,26 @@ const onMouseLeave = () => {
   activePreview.value = undefined;
 };
 
+const onMouseOut = (event: MouseEvent) => {
+  const anchor = event.target;
+
+  if (!(anchor instanceof HTMLAnchorElement)) return;
+  if (!anchor.hasAttribute("data-heading-anchor")) return;
+  if (anchor.contains(event.relatedTarget as Node | null)) return;
+
+  resetHeadingAnchor(anchor);
+};
+
+const onFocusOut = (event: FocusEvent) => {
+  const anchor = event.target;
+
+  if (!(anchor instanceof HTMLAnchorElement)) return;
+  if (!anchor.hasAttribute("data-heading-anchor")) return;
+  if (anchor.contains(event.relatedTarget as Node | null)) return;
+
+  resetHeadingAnchor(anchor);
+};
+
 const onClick = (event: MouseEvent) => {
   const target = event.target;
 
@@ -230,8 +261,10 @@ onMounted(() => {
   <div
     ref="contentEl"
     @click="onClick"
+    @focusout="onFocusOut"
     @mouseleave="onMouseLeave"
     @mousemove="onMouseMove"
+    @mouseout="onMouseOut"
   >
     <BlogContent :html="props.html" />
   </div>
