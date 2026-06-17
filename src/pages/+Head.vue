@@ -48,11 +48,6 @@ function initializeTheme() {
 }
 
 const themeScript = `(${initializeTheme.toString()})();`;
-const clarityScript = `(function(c,l,a,r,i,t,y){
-  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-})(window, document, "clarity", "script", "x8af8llwcw");`;
 </script>
 
 <template>
@@ -71,7 +66,6 @@ const clarityScript = `(function(c,l,a,r,i,t,y){
     href="/atom.xml"
   />
   <meta name="robots" content="index, follow" />
-  <script type="text/javascript" v-html="clarityScript"></script>
   <script
     v-if="homeJsonLd"
     type="application/ld+json"
