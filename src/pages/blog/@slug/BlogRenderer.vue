@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useClipboard } from "@vueuse/core";
+import { useClipboard, useEventListener } from "@vueuse/core";
 import { computed, nextTick, onMounted, ref } from "vue";
 
 import BlogContent from "./BlogContent.vue";
@@ -142,6 +142,13 @@ const resetHeadingAnchor = (anchor: HTMLAnchorElement) => {
 const markHeadingAnchorCopied = (anchor: HTMLAnchorElement) => {
   anchor.textContent = "✓";
   anchor.dataset.copied = "true";
+
+  useEventListener(anchor, "mouseleave", () => resetHeadingAnchor(anchor), {
+    once: true,
+  });
+  useEventListener(anchor, "blur", () => resetHeadingAnchor(anchor), {
+    once: true,
+  });
 };
 
 const copyHeadingUrl = async (anchor: HTMLAnchorElement) => {
@@ -212,26 +219,6 @@ const onMouseLeave = () => {
   activePreview.value = undefined;
 };
 
-const onMouseOut = (event: MouseEvent) => {
-  const anchor = event.target;
-
-  if (!(anchor instanceof HTMLAnchorElement)) return;
-  if (!anchor.hasAttribute("data-heading-anchor")) return;
-  if (anchor.contains(event.relatedTarget as Node | null)) return;
-
-  resetHeadingAnchor(anchor);
-};
-
-const onFocusOut = (event: FocusEvent) => {
-  const anchor = event.target;
-
-  if (!(anchor instanceof HTMLAnchorElement)) return;
-  if (!anchor.hasAttribute("data-heading-anchor")) return;
-  if (anchor.contains(event.relatedTarget as Node | null)) return;
-
-  resetHeadingAnchor(anchor);
-};
-
 const onClick = (event: MouseEvent) => {
   const target = event.target;
 
@@ -261,10 +248,8 @@ onMounted(() => {
   <div
     ref="contentEl"
     @click="onClick"
-    @focusout="onFocusOut"
     @mouseleave="onMouseLeave"
     @mousemove="onMouseMove"
-    @mouseout="onMouseOut"
   >
     <BlogContent :html="props.html" />
   </div>
