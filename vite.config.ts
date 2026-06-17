@@ -5,7 +5,8 @@ import vue from "@vitejs/plugin-vue";
 import vike from "vike/plugin";
 import { defineConfig } from "vite";
 
-import { optimizeBlogImages } from "./src/pages/blog/@slug/imageAssets";
+import { blogImagesPlugin } from "./src/vite-plugins/blogImages";
+import { siteMetadataPlugin } from "./src/vite-plugins/siteMetadata";
 
 export default defineConfig({
   resolve: {
@@ -14,15 +15,8 @@ export default defineConfig({
     },
   },
   plugins: [
-    {
-      name: "blog-images",
-      async buildStart() {
-        await optimizeBlogImages();
-      },
-      async configureServer() {
-        await optimizeBlogImages();
-      },
-    },
+    blogImagesPlugin(),
+    siteMetadataPlugin(),
     vike(),
     vue(),
     tailwindcss(),

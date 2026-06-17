@@ -64,7 +64,7 @@ export const contentHtml = async (blog: BlogFile) => {
   return html;
 };
 
-export type BlogFile = Blog & {
+export type BlogFile = Omit<Blog, "markdownPath"> & {
   filePath: string;
   publicPath: string;
 };
@@ -198,6 +198,7 @@ export const publicBlog = (blog: BlogFile): Blog => {
     slug: blog.slug,
     title: blog.title,
     content: blog.content,
+    markdownPath: blog.publicPath,
     latestModifiedAt: blog.latestModifiedAt,
   };
 };

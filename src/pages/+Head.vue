@@ -1,5 +1,18 @@
 <script setup lang="ts">
+import { usePageContext } from "vike-vue/usePageContext";
+import { computed } from "vue";
+
+import { SITE_NAME, SITE_ORIGIN } from "@/site";
+
 type ThemeMode = "light" | "dark" | "auto";
+
+const pageContext = usePageContext();
+const canonicalUrl = computed(() => {
+  const pathname =
+    typeof pageContext.urlPathname === "string" ? pageContext.urlPathname : "/";
+
+  return new URL(pathname, SITE_ORIGIN).href;
+});
 
 function initializeTheme() {
   try {
@@ -29,5 +42,19 @@ const themeScript = `(${initializeTheme.toString()})();`;
 
 <template>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="canonical" :href="canonicalUrl" />
+  <link
+    rel="alternate"
+    type="text/markdown"
+    title="LLM-readable site index"
+    href="/llms.txt"
+  />
+  <link
+    rel="alternate"
+    type="application/atom+xml"
+    :title="SITE_NAME"
+    href="/atom.xml"
+  />
+  <meta name="robots" content="index, follow" />
   <script v-html="themeScript"></script>
 </template>
