@@ -7,6 +7,9 @@
   "author": "",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vike dev",
     "build": "vike build",
@@ -15,6 +18,7 @@
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --fix --type-aware",
     "test": "vitest run",
+    "vercel:output": "tsx src/scripts/vercel-output.ts",
     "write": "tsx src/scripts/new.ts",
     "typecheck": "tsc -b --noEmit && vue-tsc --build --noEmit"
   },

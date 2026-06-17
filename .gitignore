@@ -2,3 +2,5 @@
 node_modules
 dist
 public/optimized-images
+.vercel
+.vercel-deploy
