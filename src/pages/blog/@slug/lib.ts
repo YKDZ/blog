@@ -4,7 +4,7 @@ import path, { resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { promisify } from "node:util";
 
-import type { Content, Root } from "mdast";
+import type { Root, RootContent } from "mdast";
 import rehypeSanitize, {
   defaultSchema,
   type Options as SanitizeSchema,
@@ -47,7 +47,7 @@ const sanitizeSchema: SanitizeSchema = {
   clobberPrefix: "",
 };
 
-const textContent = (node: Content): string => {
+const textContent = (node: RootContent): string => {
   if ("value" in node && typeof node.value === "string") return node.value;
   if ("children" in node && Array.isArray(node.children)) {
     return node.children.map(textContent).join("");
@@ -88,7 +88,8 @@ export const contentHtml = async (blog: BlogFile) => {
   return html;
 };
 
-export type BlogFile = Omit<Blog, "markdownPath"> & {
+export type BlogFile = Omit<Blog, "description" | "markdownPath"> & {
+  description?: string;
   filePath: string;
   publicPath: string;
 };
@@ -128,6 +129,27 @@ export const firstMarkdownHeading = (content: string): string | undefined => {
   const title = textContent(heading).trim();
 
   return title || undefined;
+};
+
+const truncateDescription = (description: string, maxLength = 160) => {
+  if (description.length <= maxLength) return description;
+
+  return `${description.slice(0, maxLength).trimEnd()}...`;
+};
+
+export const markdownDescription = (content: string): string | undefined => {
+  const children = markdownAst(content).children;
+  const firstHeadingIndex = children.findIndex(
+    (child) => child.type === "heading",
+  );
+  const description = children
+    .slice(firstHeadingIndex === -1 ? 0 : firstHeadingIndex + 1)
+    .filter((child) => child.type === "paragraph")
+    .map(textContent)
+    .map((text) => text.replace(/\s+/g, " ").trim())
+    .find(Boolean);
+
+  return description ? truncateDescription(description) : undefined;
 };
 
 export const stripFirstMarkdownHeading = (content: string): string => {
@@ -181,6 +203,7 @@ const blogFromFile = (options: {
     time: Number(options.dirname.split("-", 1)),
     slug: options.slug,
     title: firstMarkdownHeading(options.content) || options.slug,
+    description: markdownDescription(options.content) || options.slug,
     content: options.content,
     latestModifiedAt: options.latestModifiedAt,
   };
@@ -225,6 +248,8 @@ export const publicBlog = (blog: BlogFile): Blog => {
     time: blog.time,
     slug: blog.slug,
     title: blog.title,
+    description:
+      blog.description || markdownDescription(blog.content) || blog.slug,
     content: blog.content,
     markdownPath: blog.publicPath,
     latestModifiedAt: blog.latestModifiedAt,

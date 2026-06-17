@@ -1,9 +1,11 @@
 import vikeVue from "vike-vue/config";
 import type { Config } from "vike/types";
 
+import { SITE_DESCRIPTION, SITE_NAME } from "../site";
+
 export default {
-  title: "ykdz.me",
-  description: "一颗丁子的个人博客",
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
 
   prerender: true,
   extends: [vikeVue],

@@ -2,6 +2,7 @@ export type Blog = {
   time: number;
   slug: string;
   title: string;
+  description: string;
   content: string;
   markdownPath: string;
   latestModifiedAt?: string;

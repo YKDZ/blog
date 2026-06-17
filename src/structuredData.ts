@@ -61,6 +61,7 @@ const blogStructuredData = (blogs: Blog[]) => {
       url: siteUrl(blogUrl(blog.slug)),
       datePublished: new Date(blog.time).toISOString(),
       dateModified: blog.latestModifiedAt ?? new Date(blog.time).toISOString(),
+      description: blog.description,
     })),
   } satisfies JsonLdObject;
 };
@@ -84,6 +85,7 @@ export const blogPostingStructuredData = (blog: Blog) => {
     "@type": "BlogPosting",
     "@id": `${url}#blogposting`,
     headline: blog.title,
+    description: blog.description,
     datePublished: new Date(blog.time).toISOString(),
     dateModified: blog.latestModifiedAt ?? new Date(blog.time).toISOString(),
     author: personStructuredData(),

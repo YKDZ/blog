@@ -31,6 +31,12 @@ const formatDate = (time: number) => {
           >
             {{ blog.title }}
           </h2>
+          <p
+            class="mt-2 truncate text-sm leading-6 text-(--page-fg-muted)"
+            :title="blog.description"
+          >
+            {{ blog.description }}
+          </p>
         </a>
       </article>
     </div>

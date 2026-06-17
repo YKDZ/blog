@@ -6,6 +6,7 @@ import {
   blogUrl,
   contentHtml,
   firstMarkdownHeading,
+  markdownDescription,
   normalizeMarkdownResourceUrls,
   PUBLIC_DIR,
   publicUrlFromPath,
@@ -64,6 +65,28 @@ test("提取并剥离第一条 Markdown 标题", () => {
 
   expect(firstMarkdownHeading(content)).toBe("页面标题");
   expect(stripFirstMarkdownHeading(content)).toBe("## 正文标题\n\n内容");
+});
+
+test("从第一条标题后的第一段正文提取文章描述", () => {
+  expect(
+    markdownDescription(
+      "# 页面标题\n\n这是第一段正文，应该作为摘要。\n\n- 不是首选",
+    ),
+  ).toBe("这是第一段正文，应该作为摘要。");
+});
+
+test("文章描述忽略第一条标题前的文本", () => {
+  expect(
+    markdownDescription(
+      "标题前文本不应作为摘要。\n\n# 页面标题\n\n标题后的正文才是摘要。",
+    ),
+  ).toBe("标题后的正文才是摘要。");
+});
+
+test("文章描述跳过空标题并压缩空白", () => {
+  expect(markdownDescription("# 页面标题\n\n多行\n正文   内容")).toBe(
+    "多行 正文 内容",
+  );
 });
 
 test("标题提取尊重 Markdown 转义标点", () => {

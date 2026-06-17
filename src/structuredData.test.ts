@@ -11,6 +11,7 @@ const blog = {
   time: Date.UTC(2026, 5, 17),
   slug: "demo-post",
   title: "Demo Post",
+  description: "Demo description",
   content: "# Demo Post",
   markdownPath: "/blogs/1781667000000-demo-post/index.md",
   latestModifiedAt: "2026-06-17T03:30:00.000Z",
@@ -38,6 +39,7 @@ test("首页结构化数据描述站点和博客索引", () => {
             "@type": "BlogPosting",
             "@id": "https://ykdz.me/blog/demo-post/#blogposting",
             headline: "Demo Post",
+            description: "Demo description",
           }),
         ],
       }),
@@ -52,6 +54,7 @@ test("文章结构化数据描述单篇 BlogPosting", () => {
       "@type": "BlogPosting",
       "@id": "https://ykdz.me/blog/demo-post/#blogposting",
       headline: "Demo Post",
+      description: "Demo description",
       dateModified: "2026-06-17T03:30:00.000Z",
       inLanguage: "zh-CN",
       isPartOf: {

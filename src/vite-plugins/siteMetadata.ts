@@ -18,6 +18,7 @@ import type { Plugin } from "vite";
 
 import { blogUrl, blogs, contentHtml } from "../pages/blog/@slug/lib";
 import {
+  SITE_AUTHOR,
   SITE_DESCRIPTION,
   SITE_LANGUAGE,
   SITE_NAME,
@@ -252,8 +253,10 @@ export const validateAtomXml = (xml: string) => {
   if (feed["@_xmlns"] !== "http://www.w3.org/2005/Atom") {
     throw new Error("Invalid Atom feed: missing Atom namespace");
   }
-  if (feed["@_xml:base"] !== "https://ykdz.me/") {
-    throw new Error('Invalid Atom feed: missing xml:base="https://ykdz.me/"');
+  if (feed["@_xml:base"] !== absoluteUrl("/")) {
+    throw new Error(
+      `Invalid Atom feed: missing xml:base="${absoluteUrl("/")}"`,
+    );
   }
   if (feed["@_xml:lang"] !== SITE_LANGUAGE) {
     throw new Error(`Invalid Atom feed: missing xml:lang="${SITE_LANGUAGE}"`);
@@ -269,7 +272,7 @@ export const validateAtomXml = (xml: string) => {
     };
 
     return (
-      attributes["@_href"] === "https://ykdz.me/atom.xml" &&
+      attributes["@_href"] === absoluteUrl("/atom.xml") &&
       attributes["@_rel"] === "self" &&
       attributes["@_type"] === "application/atom+xml"
     );
@@ -458,9 +461,9 @@ const atomXml = async () => {
     `  <link href="${xmlEscape(absoluteUrl("/atom.xml"))}" rel="self" type="application/atom+xml" />`,
     `  <updated>${feedUpdatedAt}</updated>`,
     "  <author>",
-    "    <name>YKDZ</name>",
+    `    <name>${SITE_AUTHOR}</name>`,
     "  </author>",
-    '  <generator uri="https://github.com/YKDZ/blog">ykdz.me static site build</generator>',
+    `  <generator uri="https://github.com/YKDZ/blog">${SITE_DESCRIPTION}</generator>`,
     ...blogEntries,
     "</feed>",
   ].join("\n")}\n`;
