@@ -1,8 +1,10 @@
 import { expect, test } from "vitest";
 
+import type { BlogFile } from "../pages/blog/@slug/lib";
 import {
   absolutizeHtmlUrls,
   atomContentHtml,
+  atomFeedDocuments,
   validateAtomXml,
 } from "./siteMetadata";
 
@@ -85,4 +87,39 @@ test("拒绝非 RFC3339 日期的 Atom feed", () => {
 </feed>
 `),
   ).toThrow("updated is not RFC3339");
+});
+
+test("Atom feed 只在订阅入口保留最新文章并生成归档", async () => {
+  const demoBlogs = Array.from({ length: 18 }, (_, index) => {
+    const order = 18 - index;
+
+    return {
+      filePath: `/workspaces/blog/public/blogs/${order}-demo/index.md`,
+      publicPath: `/blogs/${order}-demo/index.md`,
+      time: Date.UTC(2026, 5, order),
+      slug: `demo-${order}`,
+      title: `Demo ${order}`,
+      content: `# Demo ${order}\n\n正文 ${order}`,
+      latestModifiedAt: new Date(Date.UTC(2026, 5, order)).toISOString(),
+    } satisfies BlogFile;
+  });
+  const documents = await atomFeedDocuments(demoBlogs);
+  const [current, archive] = documents;
+
+  expect(documents).toHaveLength(2);
+  expect(current?.path).toBe("/atom.xml");
+  expect(current?.xml.match(/<entry>/g)).toHaveLength(16);
+  expect(current?.xml).toContain('rel="prev-archive"');
+  expect(archive?.path).toBe("/atom/archive/1.xml");
+  expect(archive?.xml.match(/<entry>/g)).toHaveLength(2);
+  expect(archive?.xml).toContain(
+    'xmlns:fh="http://purl.org/syndication/history/1.0"',
+  );
+  expect(archive?.xml).toContain("<fh:archive/>");
+  expect(archive?.xml).toContain('rel="current"');
+  expect(archive?.xml).toContain(
+    'rel="alternate" type="text/markdown" hreflang="zh-CN"',
+  );
+  expect(() => validateAtomXml(current?.xml ?? "")).not.toThrow();
+  expect(() => validateAtomXml(archive?.xml ?? "")).not.toThrow();
 });

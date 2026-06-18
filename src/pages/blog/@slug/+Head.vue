@@ -2,6 +2,7 @@
 import { useData } from "vike-vue/useData";
 import { computed } from "vue";
 
+import { SITE_LANGUAGE } from "@/site";
 import { blogPostingStructuredData, jsonLd, siteUrl } from "@/structuredData";
 
 import type { BlogPageData } from "./types";
@@ -21,6 +22,7 @@ const articleJsonLd = computed(() => {
   <link
     rel="alternate"
     type="text/markdown"
+    :hreflang="SITE_LANGUAGE"
     title="Markdown source"
     :href="markdownUrl"
   />

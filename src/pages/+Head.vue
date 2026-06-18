@@ -2,7 +2,7 @@
 import { usePageContext } from "vike-vue/usePageContext";
 import { computed } from "vue";
 
-import { SITE_NAME } from "@/site";
+import { SITE_LANGUAGE, SITE_NAME } from "@/site";
 import { homeStructuredData, jsonLd, siteUrl } from "@/structuredData";
 
 import type { Blog } from "./blog/@slug/types";
@@ -56,6 +56,7 @@ const themeScript = `(${initializeTheme.toString()})();`;
   <link
     rel="alternate"
     type="text/markdown"
+    :hreflang="SITE_LANGUAGE"
     title="LLM-readable site index"
     href="/llms.txt"
   />

@@ -17,7 +17,9 @@ import { visit } from "unist-util-visit";
 import type { Plugin } from "vite";
 
 import { blogUrl, blogs, contentHtml } from "../pages/blog/@slug/lib";
+import type { BlogFile } from "../pages/blog/@slug/lib";
 import {
+  ATOM_RECENT_LIMIT,
   SITE_AUTHOR,
   SITE_DESCRIPTION,
   SITE_LANGUAGE,
@@ -26,6 +28,8 @@ import {
 } from "../site";
 
 const outputDir = resolve(cwd(), "dist", "client");
+const atomArchiveOutputDir = resolve(outputDir, "atom", "archive");
+const feedHistoryNamespace = "http://purl.org/syndication/history/1.0";
 
 const absoluteUrl = (pathname: string) => {
   return new URL(pathname, SITE_ORIGIN).href;
@@ -53,6 +57,16 @@ const lastModifiedDate = (value?: string) => {
 
 const dateTime = (value: string | number | Date) => {
   return new Date(value).toISOString();
+};
+
+const chunks = <T>(items: T[], size: number): T[][] => {
+  const result: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+
+  return result;
 };
 
 const isStandaloneUrl = (value: string) => {
@@ -229,8 +243,10 @@ export const validateAtomXml = (xml: string) => {
     };
     feed?: {
       "@_xmlns"?: string;
+      "@_xmlns:fh"?: string;
       "@_xml:base"?: string;
       "@_xml:lang"?: string;
+      "fh:archive"?: unknown;
       id?: unknown;
       title?: unknown;
       updated?: unknown;
@@ -253,6 +269,12 @@ export const validateAtomXml = (xml: string) => {
   if (feed["@_xmlns"] !== "http://www.w3.org/2005/Atom") {
     throw new Error("Invalid Atom feed: missing Atom namespace");
   }
+  if (
+    feed["fh:archive"] !== undefined &&
+    feed["@_xmlns:fh"] !== feedHistoryNamespace
+  ) {
+    throw new Error("Invalid Atom feed: missing Feed History namespace");
+  }
   if (feed["@_xml:base"] !== absoluteUrl("/")) {
     throw new Error(
       `Invalid Atom feed: missing xml:base="${absoluteUrl("/")}"`,
@@ -272,7 +294,7 @@ export const validateAtomXml = (xml: string) => {
     };
 
     return (
-      attributes["@_href"] === absoluteUrl("/atom.xml") &&
+      typeof attributes["@_href"] === "string" &&
       attributes["@_rel"] === "self" &&
       attributes["@_type"] === "application/atom+xml"
     );
@@ -416,49 +438,65 @@ const llmsTxt = async () => {
   ].join("\n")}\n`;
 };
 
-const atomXml = async () => {
-  const allBlogs = await blogs();
-  const blogEntries = await Promise.all(
-    allBlogs.map(async (blog) => {
-      const url = absoluteUrl(blogUrl(blog.slug));
-      const publishedAt = dateTime(blog.time);
-      const updatedAt = dateTime(blog.latestModifiedAt ?? blog.time);
-      const markdownUrl = absoluteUrl(blog.publicPath);
-      const html = atomContentHtml(String(await contentHtml(blog)), url);
+const atomArchivePath = (index: number) => {
+  return `/atom/archive/${index}.xml`;
+};
 
-      return [
-        "  <entry>",
-        `    <id>${xmlEscape(url)}</id>`,
-        `    <title>${xmlEscape(blog.title)}</title>`,
-        `    <link href="${xmlEscape(url)}" rel="alternate" type="text/html" hreflang="${SITE_LANGUAGE}" />`,
-        `    <link href="${xmlEscape(markdownUrl)}" rel="alternate" type="text/markdown" title="Markdown source" />`,
-        `    <published>${publishedAt}</published>`,
-        `    <updated>${updatedAt}</updated>`,
-        `    <content type="html">${xmlEscape(html)}</content>`,
-        "  </entry>",
-      ].join("\n");
-    }),
+const atomEntryXml = async (blog: BlogFile) => {
+  const url = absoluteUrl(blogUrl(blog.slug));
+  const publishedAt = dateTime(blog.time);
+  const updatedAt = dateTime(blog.latestModifiedAt ?? blog.time);
+  const markdownUrl = absoluteUrl(blog.publicPath);
+  const html = atomContentHtml(String(await contentHtml(blog)), url);
+
+  return [
+    "  <entry>",
+    `    <id>${xmlEscape(url)}</id>`,
+    `    <title>${xmlEscape(blog.title)}</title>`,
+    `    <link href="${xmlEscape(url)}" rel="alternate" type="text/html" hreflang="${SITE_LANGUAGE}" />`,
+    `    <link href="${xmlEscape(markdownUrl)}" rel="alternate" type="text/markdown" hreflang="${SITE_LANGUAGE}" title="Markdown source" />`,
+    `    <published>${publishedAt}</published>`,
+    `    <updated>${updatedAt}</updated>`,
+    `    <content type="html">${xmlEscape(html)}</content>`,
+    "  </entry>",
+  ].join("\n");
+};
+
+const atomFeedUpdatedAt = (feedBlogs: BlogFile[]) => {
+  if (feedBlogs.length === 0) return dateTime(new Date());
+
+  return dateTime(
+    Math.max(
+      ...feedBlogs.map((blog) =>
+        new Date(blog.latestModifiedAt ?? blog.time).getTime(),
+      ),
+    ),
   );
+};
 
-  const feedUpdatedAt =
-    allBlogs.length === 0
-      ? dateTime(new Date())
-      : dateTime(
-          Math.max(
-            ...allBlogs.map((blog) =>
-              new Date(blog.latestModifiedAt ?? blog.time).getTime(),
-            ),
-          ),
-        );
-
+const atomFeedXml = async (options: {
+  additionalLinks?: string[];
+  isArchive?: boolean;
+  selfPath: string;
+  title?: string;
+  blogs: BlogFile[];
+}) => {
+  const blogEntries = await Promise.all(options.blogs.map(atomEntryXml));
+  const feedUpdatedAt = atomFeedUpdatedAt(options.blogs);
+  const archiveAttributes = options.isArchive
+    ? ` xmlns:fh="${feedHistoryNamespace}"`
+    : "";
+  const archiveElement = options.isArchive ? "  <fh:archive/>" : undefined;
   const xml = `${[
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<feed xmlns="http://www.w3.org/2005/Atom" xml:base="${absoluteUrl("/")}" xml:lang="${SITE_LANGUAGE}">`,
+    `<feed xmlns="http://www.w3.org/2005/Atom"${archiveAttributes} xml:base="${absoluteUrl("/")}" xml:lang="${SITE_LANGUAGE}">`,
     `  <id>${xmlEscape(absoluteUrl("/"))}</id>`,
-    `  <title>${xmlEscape(SITE_NAME)}</title>`,
+    `  <title>${xmlEscape(options.title ?? SITE_NAME)}</title>`,
     `  <subtitle>${xmlEscape(SITE_DESCRIPTION)}</subtitle>`,
     `  <link href="${xmlEscape(absoluteUrl("/"))}" rel="alternate" type="text/html" hreflang="${SITE_LANGUAGE}" />`,
-    `  <link href="${xmlEscape(absoluteUrl("/atom.xml"))}" rel="self" type="application/atom+xml" />`,
+    `  <link href="${xmlEscape(absoluteUrl(options.selfPath))}" rel="self" type="application/atom+xml" />`,
+    archiveElement,
+    ...(options.additionalLinks ?? []),
     `  <updated>${feedUpdatedAt}</updated>`,
     "  <author>",
     `    <name>${SITE_AUTHOR}</name>`,
@@ -466,21 +504,78 @@ const atomXml = async () => {
     `  <generator uri="https://github.com/YKDZ/blog">${SITE_DESCRIPTION}</generator>`,
     ...blogEntries,
     "</feed>",
-  ].join("\n")}\n`;
+  ]
+    .filter(Boolean)
+    .join("\n")}\n`;
 
   validateAtomXml(xml);
 
   return xml;
 };
 
+export const atomFeedDocuments = async (providedBlogs?: BlogFile[]) => {
+  const allBlogs = providedBlogs ?? (await blogs());
+  const recentLimit = Math.max(1, ATOM_RECENT_LIMIT);
+  const recentBlogs = allBlogs.slice(0, recentLimit);
+  const archiveChunks = chunks(allBlogs.slice(recentLimit), recentLimit);
+  const archiveDocuments = await Promise.all(
+    archiveChunks.map(async (archiveBlogs, index) => {
+      const archiveIndex = index + 1;
+      const links = [
+        `  <link href="${xmlEscape(absoluteUrl("/atom.xml"))}" rel="current" type="application/atom+xml" />`,
+        archiveIndex < archiveChunks.length
+          ? `  <link href="${xmlEscape(absoluteUrl(atomArchivePath(archiveIndex + 1)))}" rel="prev-archive" type="application/atom+xml" />`
+          : undefined,
+        archiveIndex > 1
+          ? `  <link href="${xmlEscape(absoluteUrl(atomArchivePath(archiveIndex - 1)))}" rel="next-archive" type="application/atom+xml" />`
+          : undefined,
+      ].filter((link): link is string => Boolean(link));
+
+      return {
+        path: atomArchivePath(archiveIndex),
+        xml: await atomFeedXml({
+          additionalLinks: links,
+          blogs: archiveBlogs,
+          isArchive: true,
+          selfPath: atomArchivePath(archiveIndex),
+          title: `${SITE_NAME} archive ${archiveIndex}`,
+        }),
+      };
+    }),
+  );
+
+  const currentLinks =
+    archiveDocuments.length > 0
+      ? [
+          `  <link href="${xmlEscape(absoluteUrl(atomArchivePath(1)))}" rel="prev-archive" type="application/atom+xml" />`,
+        ]
+      : [];
+
+  return [
+    {
+      path: "/atom.xml",
+      xml: await atomFeedXml({
+        additionalLinks: currentLinks,
+        blogs: recentBlogs,
+        selfPath: "/atom.xml",
+      }),
+    },
+    ...archiveDocuments,
+  ];
+};
+
 export const generateSiteMetadata = async () => {
   await mkdir(outputDir, { recursive: true });
+  await mkdir(atomArchiveOutputDir, { recursive: true });
+  const atomDocuments = await atomFeedDocuments();
 
   await Promise.all([
     writeFile(resolve(outputDir, "robots.txt"), robotsTxt()),
     writeFile(resolve(outputDir, "sitemap.xml"), await sitemapXml()),
     writeFile(resolve(outputDir, "llms.txt"), await llmsTxt()),
-    writeFile(resolve(outputDir, "atom.xml"), await atomXml()),
+    ...atomDocuments.map((document) =>
+      writeFile(resolve(outputDir, document.path.slice(1)), document.xml),
+    ),
   ]);
 };
 
