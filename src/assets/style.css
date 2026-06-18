@@ -99,7 +99,7 @@
     border-radius: 0;
     color: var(--page-fg);
     overflow-wrap: anywhere;
-    padding: 0.4em 0.4em;
+    padding: 0.25em 0.25em;
     vertical-align: baseline;
     word-break: break-word;
   }
@@ -226,6 +226,12 @@
       );
       max-width: none;
       width: 100vw;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .prose :not(pre) > code {
+      padding: 0.3em 0.3em;
     }
   }
 
