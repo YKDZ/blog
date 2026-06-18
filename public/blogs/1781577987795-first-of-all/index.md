@@ -2,7 +2,7 @@
 
 此文旨在测试博客的 md 渲染能力和内容页功能，也顺便介绍一下我的小博客。
 
-本站点是由 vike[^vike] 驱动的，以 SSG[^SSG] 模式在构建阶段完成渲染并部署在 [GitHub Pages](https://github.com/YKDZ/blog/deployments/github-pages) 上。
+本站点由 vike[^vike] 驱动，以 SSG[^SSG] 模式在构建阶段完成渲染并部署在 [GitHub Pages](https://github.com/YKDZ/blog/deployments/github-pages) 上。
 
 ## 背景
 
