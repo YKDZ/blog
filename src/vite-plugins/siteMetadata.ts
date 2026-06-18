@@ -486,8 +486,8 @@ const robotsTxt = () => {
 const llmsTxt = async () => {
   const blogLinks = (await blogs()).map((blog) => {
     return [
-      `- [${markdownEscape(blog.title)}](${absoluteUrl(blogUrl(blog.slug))})`,
-      `  - Markdown: [source](${absoluteUrl(blog.publicPath)})`,
+      `- [${markdownEscape(blog.title)}](${absoluteUrl(blogUrl(blog.slug))}): ${markdownEscape(blog.description || blog.slug)}`,
+      `  - [Markdown 源文档](${absoluteUrl(blog.publicPath)}): 适合纯文本上下文读取的原始文章内容`,
     ].join("\n");
   });
 
@@ -496,14 +496,14 @@ const llmsTxt = async () => {
     "",
     `> ${SITE_DESCRIPTION}`,
     "",
-    "This static blog is authored in Markdown and rendered to HTML at build time. Use the canonical HTML URLs for normal web browsing and the Markdown source URLs when plain-text context is preferable.",
+    "这是一个使用 Markdown 写作、在构建阶段渲染为 HTML 的静态博客。普通浏览应使用规范 HTML 地址；需要纯文本上下文时，可以读取对应的 Markdown 源文档。",
     "",
-    "## Site files",
+    "## 站点文件",
     "",
-    `- [Sitemap](${absoluteUrl("/sitemap.xml")})`,
-    `- [Atom feed](${absoluteUrl("/atom.xml")})`,
+    `- [站点地图](${absoluteUrl("/sitemap.xml")}): 面向搜索引擎和爬虫的 URL 索引`,
+    `- [Atom 订阅源](${absoluteUrl("/atom.xml")}): 最新文章全文订阅源`,
     "",
-    "## Blog posts",
+    "## 文章列表",
     "",
     ...blogLinks,
   ].join("\n")}\n`;
@@ -525,7 +525,7 @@ const atomEntryXml = async (blog: BlogFile) => {
     `    <id>${xmlEscape(url)}</id>`,
     `    <title>${xmlEscape(blog.title)}</title>`,
     `    <link href="${xmlEscape(url)}" rel="alternate" type="text/html" hreflang="${SITE_LANGUAGE}" />`,
-    `    <link href="${xmlEscape(markdownUrl)}" rel="alternate" type="text/markdown" hreflang="${SITE_LANGUAGE}" title="Markdown source" />`,
+    `    <link href="${xmlEscape(markdownUrl)}" rel="alternate" type="text/markdown" hreflang="${SITE_LANGUAGE}" title="Markdown 源文档" />`,
     `    <published>${publishedAt}</published>`,
     `    <updated>${updatedAt}</updated>`,
     `    <content type="html">${xmlEscape(html)}</content>`,
@@ -609,7 +609,7 @@ export const atomFeedDocuments = async (providedBlogs?: BlogFile[]) => {
           blogs: archiveBlogs,
           isArchive: true,
           selfPath: atomArchivePath(archiveIndex),
-          title: `${SITE_NAME} archive ${archiveIndex}`,
+          title: `${SITE_NAME} 归档 ${archiveIndex}`,
         }),
       };
     }),

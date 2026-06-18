@@ -23,6 +23,9 @@ const homeJsonLd = computed(() => {
 
   return jsonLd(homeStructuredData(data.blogs));
 });
+const llmsUrl = computed(() => {
+  return siteUrl("/llms.txt");
+});
 
 function initializeTheme() {
   try {
@@ -57,8 +60,8 @@ const themeScript = `(${initializeTheme.toString()})();`;
     rel="alternate"
     type="text/markdown"
     :hreflang="SITE_LANGUAGE"
-    title="LLM-readable site index"
-    href="/llms.txt"
+    title="面向大语言模型的站点索引"
+    :href="llmsUrl"
   />
   <link
     rel="alternate"

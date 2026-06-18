@@ -23,7 +23,7 @@ const articleJsonLd = computed(() => {
     rel="alternate"
     type="text/markdown"
     :hreflang="SITE_LANGUAGE"
-    title="Markdown source"
+    title="Markdown 源文档"
     :href="markdownUrl"
   />
   <script type="application/ld+json" v-html="articleJsonLd"></script>
