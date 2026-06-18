@@ -98,9 +98,9 @@
     border: 1px solid var(--page-code-border);
     border-radius: 0;
     color: var(--page-fg);
-    font-weight: 500;
     overflow-wrap: anywhere;
-    padding: 0.08em 0.28em;
+    padding: 0.4em 0.4em;
+    vertical-align: baseline;
     word-break: break-word;
   }
 
@@ -232,5 +232,12 @@
   [data-preview-target="true"] {
     background: var(--page-highlight-bg);
     outline: none;
+  }
+}
+
+@layer utilities {
+  .prose :not(pre) > code {
+    font-size: 0.875em;
+    font-weight: 400;
   }
 }
