@@ -2,7 +2,17 @@
 import { usePageContext } from "vike-vue/usePageContext";
 import { computed } from "vue";
 
-import { SITE_LANGUAGE, SITE_NAME } from "@/site";
+import {
+  SITE_DESCRIPTION,
+  SITE_DISPLAY_NAME,
+  SITE_LANGUAGE,
+  SITE_NAME,
+  SITE_OG_LOCALE,
+  SITE_SOCIAL_IMAGE,
+  SITE_SOCIAL_IMAGE_HEIGHT,
+  SITE_SOCIAL_IMAGE_TYPE,
+  SITE_SOCIAL_IMAGE_WIDTH,
+} from "@/site";
 import { homeStructuredData, jsonLd, siteUrl } from "@/structuredData";
 
 import type { BlogListItem } from "./blog/@slug/types";
@@ -16,10 +26,14 @@ const canonicalUrl = computed(() => {
 
   return siteUrl(pathname);
 });
+const isHomePage = computed(() => pageContext.urlPathname === "/");
+const socialImageUrl = computed(() => {
+  return siteUrl(SITE_SOCIAL_IMAGE);
+});
 const homeJsonLd = computed(() => {
   const data = pageContext.data as { blogs?: BlogListItem[] } | undefined;
 
-  if (pageContext.urlPathname !== "/" || !data?.blogs) return undefined;
+  if (!isHomePage.value || !data?.blogs) return undefined;
 
   return jsonLd(homeStructuredData(data.blogs));
 });
@@ -70,6 +84,29 @@ const themeScript = `(${initializeTheme.toString()})();`;
     href="/atom.xml"
   />
   <meta name="robots" content="index, follow" />
+  <template v-if="isHomePage">
+    <meta property="og:type" content="website" />
+    <meta property="og:url" :content="canonicalUrl" />
+    <meta property="og:site_name" :content="SITE_NAME" />
+    <meta property="og:locale" :content="SITE_OG_LOCALE" />
+    <meta property="og:image" :content="socialImageUrl" />
+    <meta property="og:image:secure_url" :content="socialImageUrl" />
+    <meta property="og:image:type" :content="SITE_SOCIAL_IMAGE_TYPE" />
+    <meta
+      property="og:image:width"
+      :content="String(SITE_SOCIAL_IMAGE_WIDTH)"
+    />
+    <meta
+      property="og:image:height"
+      :content="String(SITE_SOCIAL_IMAGE_HEIGHT)"
+    />
+    <meta property="og:image:alt" :content="SITE_DISPLAY_NAME" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" :content="SITE_NAME" />
+    <meta name="twitter:description" :content="SITE_DESCRIPTION" />
+    <meta name="twitter:image" :content="socialImageUrl" />
+    <meta name="twitter:image:alt" :content="SITE_DISPLAY_NAME" />
+  </template>
   <script
     v-if="homeJsonLd"
     type="application/ld+json"

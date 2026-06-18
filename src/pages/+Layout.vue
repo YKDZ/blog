@@ -2,6 +2,8 @@
 import "@/assets/style.css";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
+import { SITE_DISPLAY_NAME } from "@/site";
+
 type ThemeMode = "light" | "dark" | "auto";
 
 const themeModes = [
@@ -79,7 +81,7 @@ onBeforeUnmount(() => {
           href="/"
           class="text-sm font-semibold tracking-normal text-(--page-fg)"
         >
-          一颗丁子
+          {{ SITE_DISPLAY_NAME }}
         </a>
         <div
           class="flex border border-(--page-border-soft) bg-(--page-surface) transition-colors duration-200 hover:border-(--page-border-hover)"
