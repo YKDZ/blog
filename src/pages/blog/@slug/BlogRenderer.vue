@@ -28,6 +28,7 @@ const previewLayerReady = ref(false);
 const previewLeft = ref(0);
 const previewTop = ref(0);
 const previewRequestId = ref(0);
+const previewScrollRequestId = ref(0);
 const { copy: copyToClipboard } = useClipboard({ legacy: true });
 
 const currentPreview = computed<BlogPreview>(() => {
@@ -182,6 +183,12 @@ const clearPreviewHighlight = () => {
     ?.removeAttribute("data-preview-target");
 };
 
+const nextAnimationFrame = () => {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+};
+
 const resetHeadingAnchor = (anchor: HTMLAnchorElement) => {
   delete anchor.dataset.copied;
 };
@@ -214,22 +221,35 @@ const copyHeadingUrl = async (anchor: HTMLAnchorElement) => {
 };
 
 const scrollPreviewToHash = async (hash: string) => {
+  const scrollRequestId = previewScrollRequestId.value + 1;
+  previewScrollRequestId.value = scrollRequestId;
+
   await nextTick();
 
   const body = previewBodyEl.value;
 
   if (!body) return;
 
-  body.scrollTop = 0;
-  clearPreviewHighlight();
-
-  if (!hash) return;
+  if (!hash) {
+    body.scrollTop = 0;
+    clearPreviewHighlight();
+    return;
+  }
 
   if (hash === headingIdFromText(activePreview.value?.title ?? "")) return;
 
   const target = body.querySelector<HTMLElement>(`#${CSS.escape(hash)}`);
 
   if (!target) return;
+
+  await nextAnimationFrame();
+
+  if (
+    scrollRequestId !== previewScrollRequestId.value ||
+    body !== previewBodyEl.value
+  ) {
+    return;
+  }
 
   const bodyRect = body.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
@@ -238,6 +258,8 @@ const scrollPreviewToHash = async (hash: string) => {
     targetRect.top -
     bodyRect.top -
     (body.clientHeight - targetRect.height) / 2;
+
+  clearPreviewHighlight();
   body.scrollTop = Math.max(0, centeredTop);
   target.dataset.previewTarget = "true";
 };
@@ -288,6 +310,7 @@ const onMouseMove = (event: MouseEvent) => {
 
 const onMouseLeave = () => {
   previewRequestId.value += 1;
+  previewScrollRequestId.value += 1;
   activePreview.value = undefined;
 };
 
@@ -310,6 +333,7 @@ const onClick = (event: MouseEvent) => {
 
   activePreview.value = undefined;
   previewRequestId.value += 1;
+  previewScrollRequestId.value += 1;
 };
 
 onMounted(() => {
