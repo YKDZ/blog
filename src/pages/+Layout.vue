@@ -2,7 +2,7 @@
 import "@/assets/style.css";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-import { SITE_DISPLAY_NAME } from "@/site";
+import { SITE_DISPLAY_NAME, SITE_DISPLAY_NAME_EMPHASIS } from "@/site";
 
 type ThemeMode = "light" | "dark" | "auto";
 
@@ -14,6 +14,7 @@ const themeModes = [
   label: string;
   value: ThemeMode;
 }>;
+const displayNameCharacters = Array.from(SITE_DISPLAY_NAME);
 
 const storageKey = "blog-theme";
 const mode = ref<ThemeMode>("auto");
@@ -79,9 +80,18 @@ onBeforeUnmount(() => {
       >
         <a
           href="/"
-          class="text-sm font-semibold tracking-normal text-(--page-fg)"
+          class="inline-flex h-full items-center font-semibold tracking-normal text-(--page-fg)"
         >
-          {{ SITE_DISPLAY_NAME }}
+          <span
+            v-for="(character, index) in displayNameCharacters"
+            :key="`${character}-${index}`"
+            class="inline-flex w-[1.08em] items-center justify-center leading-none"
+            :class="
+              character === SITE_DISPLAY_NAME_EMPHASIS ? 'text-lg' : 'text-sm'
+            "
+          >
+            {{ character }}
+          </span>
         </a>
         <div
           class="flex border border-(--page-border-soft) bg-(--page-surface) transition-colors duration-200 hover:border-(--page-border-hover)"

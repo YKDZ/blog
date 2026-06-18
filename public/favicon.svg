@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24"><rect width="24" height="24" fill="#000"/><g transform="translate(12 12) scale(.82) translate(-12 -12)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="1.5"><path d="M21 16.929V10c0-3.771 0-5.657-1.172-6.828S16.771 2 13 2h-1C8.229 2 6.343 2 5.172 3.172S4 6.229 4 10v9.5"/><path d="M21 17H6.5a2.5 2.5 0 0 0 0 5H21"/><path d="M21 22a2.5 2.5 0 0 1 0-5"/><path stroke-linejoin="round" d="M14.388 6.85a1.97 1.97 0 0 1 1.112-.341c1.105 0 2 .903 2 2.017c0 1.097-.904 2.014-2 2.014v.96c0 .943 0 1.414-.293 1.707s-.764.293-1.707.293h-2c-.943 0-1.414 0-1.707-.293S9.5 12.443 9.5 11.5v-.835c-1.168 0-2-.87-2-2.139c0-1.114.895-2.017 2-2.017c.412 0 .794.125 1.112.34A2 2 0 0 1 12.5 5.5c.872 0 1.614.563 1.888 1.35m0 0q.11.314.112.668"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="一颗丁子">
+  <rect width="128" height="128" fill="#000"/>
+  <g color="#fff" transform="translate(-5 -6.2) scale(1.08)">
+    <g transform="translate(33.5 18) scale(2.8)">
+      <path fill="currentColor" fill-rule="evenodd" d="M10.218 3.216a.75.75 0 0 0-1.436-.431l-3 10a.75.75 0 0 0 1.436.43zM4.53 4.97a.75.75 0 0 1 0 1.06L2.56 8l1.97 1.97a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0m6.94 6.06a.75.75 0 0 1 0-1.06L13.44 8l-1.97-1.97a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0" clip-rule="evenodd"/>
+    </g>
+    <g transform="translate(18 30.5) scale(3.6)">
+      <path fill="currentColor" d="M6 15q-1.25 0-2.125-.875T3 12V8h13.025q.125-.825.675-1.475t1.35-.925l4.625-1.55l.625 1.9l-4.625 1.55q-.3.1-.488.363T18 8.45V12q0 1.25-.875 2.125T15 15z"/>
+      <path fill="currentColor" d="M9 21v-3H2v-2h7q.825 0 1.413.588T11 18v3z"/>
+      <path fill="currentColor" d="M13 21v-3q0-.825.588-1.412T15 16h7v2h-7v3z"/>
+    </g>
+  </g>
+</svg>

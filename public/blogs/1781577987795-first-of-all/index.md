@@ -100,9 +100,9 @@ pnpm dev
 
 ![favicon](../../favicon.svg)
 
-原图来自 [Yesicon](https://yesicon.app/hugeicons/cook-book)（MIT 协议），自行修改为黑色背景和白色线条。
+原图是 [Code](https://yesicon.app/gravity-ui/code) 和 [平底锅](https://yesicon.app/material-symbols/skillet-cooktop) 两个 SVG 图，自行拼接并改为黑色背景和白色线条。
 
-这是一本食谱书，寓意软件工程犹如烹饪，是纯粹的创造。因此这个博客除了技术内容之外应该也会整理一些原创食谱。
+我认为软件工程犹如烹饪，是纯粹的创造。因此这个博客除了技术内容之外应该也会整理一些原创食谱。
 
 ---
 
