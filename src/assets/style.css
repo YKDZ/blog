@@ -115,6 +115,7 @@
   }
 
   .prose [data-footnotes] {
+    --footnotes-list-indent: 1.25rem;
     border-top: 0px;
     font-size: 0.875em;
     line-height: 1.6;
@@ -128,12 +129,26 @@
 
   .prose [data-footnotes] ol {
     margin: 0;
-    padding-inline-start: 1.25rem;
+    padding-inline-start: var(--footnotes-list-indent);
   }
 
   .prose [data-footnotes] li {
     margin: 0.35rem 0 0;
     padding-inline-start: 0.15rem;
+  }
+
+  .prose [data-footnotes] li[data-preview-target="true"] {
+    isolation: isolate;
+    position: relative;
+    z-index: 0;
+  }
+
+  .prose [data-footnotes] li[data-preview-target="true"]::before {
+    background: var(--page-highlight-bg);
+    content: "";
+    inset: 0 0 0 calc(-1 * var(--footnotes-list-indent));
+    position: absolute;
+    z-index: -1;
   }
 
   .prose [data-footnotes] li:first-child {

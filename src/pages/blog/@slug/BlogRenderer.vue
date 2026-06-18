@@ -183,6 +183,18 @@ const clearPreviewHighlight = () => {
     ?.removeAttribute("data-preview-target");
 };
 
+const previewHighlightTarget = (target: HTMLElement) => {
+  if (target.matches("[data-footnote-ref]")) {
+    return target.closest<HTMLElement>("p, li, blockquote, td, th") ?? target;
+  }
+
+  if (target.matches("[data-footnote-backref]")) {
+    return target.closest<HTMLElement>("li") ?? target;
+  }
+
+  return target;
+};
+
 const nextAnimationFrame = () => {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => resolve());
@@ -251,8 +263,9 @@ const scrollPreviewToHash = async (hash: string) => {
     return;
   }
 
+  const highlightTarget = previewHighlightTarget(target);
   const bodyRect = body.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
+  const targetRect = highlightTarget.getBoundingClientRect();
   const centeredTop =
     body.scrollTop +
     targetRect.top -
@@ -261,7 +274,7 @@ const scrollPreviewToHash = async (hash: string) => {
 
   clearPreviewHighlight();
   body.scrollTop = Math.max(0, centeredTop);
-  target.dataset.previewTarget = "true";
+  highlightTarget.dataset.previewTarget = "true";
 };
 
 const onMouseMove = (event: MouseEvent) => {
