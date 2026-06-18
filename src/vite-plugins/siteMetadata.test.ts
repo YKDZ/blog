@@ -5,6 +5,7 @@ import {
   absolutizeHtmlUrls,
   atomContentHtml,
   atomFeedDocuments,
+  blogPreviewDocuments,
   validateAtomXml,
 } from "./siteMetadata";
 
@@ -122,4 +123,42 @@ test("Atom feed 只在订阅入口保留最新文章并生成归档", async () =
   );
   expect(() => validateAtomXml(current?.xml ?? "")).not.toThrow();
   expect(() => validateAtomXml(archive?.xml ?? "")).not.toThrow();
+});
+
+test("生成按需加载的博客预览 JSON", async () => {
+  const previews = await blogPreviewDocuments([
+    {
+      filePath: "/workspaces/blog/public/blogs/1-demo/index.md",
+      publicPath: "/blogs/1-demo/index.md",
+      time: Date.UTC(2026, 5, 1),
+      slug: "demo",
+      title: "Demo",
+      content: "# Demo\n\n开头\n\n## 章节\n\n目标正文\n\n后续正文",
+    } satisfies BlogFile,
+  ]);
+  const indexPreview = previews.find(
+    (preview) => preview.path === "/blog-previews/demo/index.json",
+  );
+  const headingPreview = previews.find(
+    (preview) =>
+      preview.path === `/blog-previews/demo/${encodeURIComponent("章节")}.json`,
+  );
+  const indexJson = JSON.parse(indexPreview?.json ?? "") as {
+    html: string;
+  };
+  const headingJson = JSON.parse(headingPreview?.json ?? "") as {
+    html: string;
+  };
+
+  expect(previews).toHaveLength(2);
+  expect(indexJson).toEqual(
+    expect.objectContaining({
+      slug: "demo",
+      title: "Demo",
+    }),
+  );
+  expect(indexJson.html).toContain("<p>开头</p>");
+  expect(headingJson.html).toContain("<p>开头</p>");
+  expect(headingJson.html).toContain('<h2 id="章节">');
+  expect(headingJson.html).toContain("<p>目标正文</p>");
 });

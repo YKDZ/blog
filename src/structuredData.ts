@@ -1,5 +1,5 @@
 import { blogUrl } from "./pages/blog/@slug/lib";
-import type { Blog } from "./pages/blog/@slug/types";
+import type { BlogListItem, BlogMetadata } from "./pages/blog/@slug/types";
 import {
   SITE_AUTHOR,
   SITE_DESCRIPTION,
@@ -42,7 +42,7 @@ const websiteStructuredData = () => {
   } satisfies JsonLdObject;
 };
 
-const blogStructuredData = (blogs: Blog[]) => {
+const blogStructuredData = (blogs: BlogListItem[]) => {
   return {
     "@type": "Blog",
     "@id": siteUrl("/#blog"),
@@ -66,7 +66,7 @@ const blogStructuredData = (blogs: Blog[]) => {
   } satisfies JsonLdObject;
 };
 
-export const homeStructuredData = (blogs: Blog[]) => {
+export const homeStructuredData = (blogs: BlogListItem[]) => {
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -77,7 +77,7 @@ export const homeStructuredData = (blogs: Blog[]) => {
   } satisfies JsonLdObject;
 };
 
-export const blogPostingStructuredData = (blog: Blog) => {
+export const blogPostingStructuredData = (blog: BlogMetadata) => {
   const url = siteUrl(blogUrl(blog.slug));
 
   return {

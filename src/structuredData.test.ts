@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import type { Blog } from "./pages/blog/@slug/types";
+import type { BlogMetadata } from "./pages/blog/@slug/types";
 import {
   blogPostingStructuredData,
   homeStructuredData,
@@ -12,10 +12,9 @@ const blog = {
   slug: "demo-post",
   title: "Demo Post",
   description: "Demo description",
-  content: "# Demo Post",
   markdownPath: "/blogs/1781667000000-demo-post/index.md",
   latestModifiedAt: "2026-06-17T03:30:00.000Z",
-} satisfies Blog;
+} satisfies BlogMetadata;
 
 test("首页结构化数据描述站点和博客索引", () => {
   const data = homeStructuredData([blog]);

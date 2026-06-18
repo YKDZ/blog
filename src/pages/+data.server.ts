@@ -1,11 +1,11 @@
-import { blogs, publicBlog } from "./blog/@slug/lib";
-import type { Blog } from "./blog/@slug/types";
+import { blogs, publicBlogListItem } from "./blog/@slug/lib";
+import type { BlogListItem } from "./blog/@slug/types";
 
 export const data = async (): Promise<{
-  blogs: Blog[];
+  blogs: BlogListItem[];
 }> => {
   return {
-    blogs: (await blogs()).map(publicBlog),
+    blogs: (await blogs()).map(publicBlogListItem),
   };
 };
 

@@ -21,7 +21,7 @@ import rehypeCodeHighlight from "./plugins/codeHighlight";
 import rehypeHeadingId from "./plugins/headingId";
 import rehypeLinkTarget from "./plugins/linkTarget";
 import remarkUrlTransform from "./plugins/urlTransform";
-import type { Blog } from "./types";
+import type { Blog, BlogListItem, BlogMetadata } from "./types";
 
 const execFileAsync = promisify(execFile);
 
@@ -252,6 +252,29 @@ export const publicBlog = (blog: BlogFile): Blog => {
       blog.description || markdownDescription(blog.content) || blog.slug,
     content: blog.content,
     markdownPath: blog.publicPath,
+    latestModifiedAt: blog.latestModifiedAt,
+  };
+};
+
+export const publicBlogMetadata = (blog: BlogFile): BlogMetadata => {
+  return {
+    time: blog.time,
+    slug: blog.slug,
+    title: blog.title,
+    description:
+      blog.description || markdownDescription(blog.content) || blog.slug,
+    markdownPath: blog.publicPath,
+    latestModifiedAt: blog.latestModifiedAt,
+  };
+};
+
+export const publicBlogListItem = (blog: BlogFile): BlogListItem => {
+  return {
+    time: blog.time,
+    slug: blog.slug,
+    title: blog.title,
+    description:
+      blog.description || markdownDescription(blog.content) || blog.slug,
     latestModifiedAt: blog.latestModifiedAt,
   };
 };

@@ -8,11 +8,16 @@ import type { BlogPreview } from "./types";
 
 const props = defineProps<{
   currentSlug: string;
+  currentTitle: string;
   html: string;
-  previews: BlogPreview[];
 }>();
 
 type ActivePreview = BlogPreview & {
+  hash: string;
+};
+
+type PreviewTarget = {
+  slug: string;
   hash: string;
 };
 
@@ -22,11 +27,18 @@ const activePreview = ref<ActivePreview>();
 const previewLayerReady = ref(false);
 const previewLeft = ref(0);
 const previewTop = ref(0);
+const previewRequestId = ref(0);
 const { copy: copyToClipboard } = useClipboard({ legacy: true });
 
-const previewBySlug = computed(() => {
-  return new Map(props.previews.map((preview) => [preview.slug, preview]));
+const currentPreview = computed<BlogPreview>(() => {
+  return {
+    slug: props.currentSlug,
+    title: props.currentTitle,
+    html: props.html,
+  };
 });
+
+const previewCache = new Map<string, Promise<BlogPreview | undefined>>();
 
 const previewStyle = computed(() => {
   return {
@@ -65,6 +77,49 @@ const internalBlogLink = (href: string) => {
   };
 };
 
+const isBlogPreview = (value: unknown): value is BlogPreview => {
+  if (!value || typeof value !== "object") return false;
+
+  const preview = value as Partial<Record<keyof BlogPreview, unknown>>;
+
+  return (
+    typeof preview.slug === "string" &&
+    typeof preview.title === "string" &&
+    typeof preview.html === "string"
+  );
+};
+
+const previewJsonUrl = (target: PreviewTarget) => {
+  const fileName = target.hash
+    ? `${encodeURIComponent(target.hash)}.json`
+    : "index.json";
+
+  return `/blog-previews/${encodeURIComponent(target.slug)}/${fileName}`;
+};
+
+const loadPreview = async (target: PreviewTarget) => {
+  if (target.slug === props.currentSlug) return currentPreview.value;
+
+  const cacheKey = `${target.slug}#${target.hash}`;
+
+  if (!previewCache.has(cacheKey)) {
+    previewCache.set(
+      cacheKey,
+      fetch(previewJsonUrl(target))
+        .then(async (response) => {
+          if (!response.ok) return undefined;
+
+          const preview: unknown = await response.json();
+
+          return isBlogPreview(preview) ? preview : undefined;
+        })
+        .catch(() => undefined),
+    );
+  }
+
+  return previewCache.get(cacheKey);
+};
+
 const previewHasHash = (preview: BlogPreview, hash: string) => {
   if (!hash) return true;
 
@@ -78,7 +133,9 @@ const previewHasHash = (preview: BlogPreview, hash: string) => {
   );
 };
 
-const previewTargetFromEvent = (event: MouseEvent) => {
+const previewTargetFromEvent = (
+  event: MouseEvent,
+): PreviewTarget | undefined => {
   const target = event.target;
 
   if (!(target instanceof Element)) return;
@@ -96,16 +153,7 @@ const previewTargetFromEvent = (event: MouseEvent) => {
 
   if (!targetBlog) return;
 
-  const preview = previewBySlug.value.get(targetBlog.slug);
-
-  if (!preview) return;
-
-  if (!previewHasHash(preview, targetBlog.hash)) return;
-
-  return {
-    ...preview,
-    hash: targetBlog.hash,
-  };
+  return targetBlog;
 };
 
 const movePreview = (event: MouseEvent) => {
@@ -195,25 +243,51 @@ const scrollPreviewToHash = async (hash: string) => {
 };
 
 const onMouseMove = (event: MouseEvent) => {
-  const preview = previewTargetFromEvent(event);
+  const targetBlog = previewTargetFromEvent(event);
 
-  if (!preview) {
+  if (!targetBlog) {
+    previewRequestId.value += 1;
     activePreview.value = undefined;
     return;
   }
 
   movePreview(event);
 
-  if (
-    activePreview.value?.slug !== preview.slug ||
-    activePreview.value.hash !== preview.hash
-  ) {
-    activePreview.value = preview;
-    void scrollPreviewToHash(preview.hash);
-  }
+  const requestId = previewRequestId.value + 1;
+  previewRequestId.value = requestId;
+
+  void loadPreview(targetBlog).then((preview) => {
+    if (requestId !== previewRequestId.value) return;
+
+    if (!preview || !previewHasHash(preview, targetBlog.hash)) {
+      activePreview.value = undefined;
+      return;
+    }
+
+    const html = preview.html;
+    if (!html) {
+      activePreview.value = undefined;
+      return;
+    }
+
+    const active = {
+      ...preview,
+      html,
+      hash: targetBlog.hash,
+    };
+
+    if (
+      activePreview.value?.slug !== active.slug ||
+      activePreview.value.hash !== active.hash
+    ) {
+      activePreview.value = active;
+      void scrollPreviewToHash(active.hash);
+    }
+  });
 };
 
 const onMouseLeave = () => {
+  previewRequestId.value += 1;
   activePreview.value = undefined;
 };
 
@@ -235,6 +309,7 @@ const onClick = (event: MouseEvent) => {
   }
 
   activePreview.value = undefined;
+  previewRequestId.value += 1;
 };
 
 onMounted(() => {

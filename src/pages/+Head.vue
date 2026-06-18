@@ -5,7 +5,7 @@ import { computed } from "vue";
 import { SITE_LANGUAGE, SITE_NAME } from "@/site";
 import { homeStructuredData, jsonLd, siteUrl } from "@/structuredData";
 
-import type { Blog } from "./blog/@slug/types";
+import type { BlogListItem } from "./blog/@slug/types";
 
 type ThemeMode = "light" | "dark" | "auto";
 
@@ -17,7 +17,7 @@ const canonicalUrl = computed(() => {
   return siteUrl(pathname);
 });
 const homeJsonLd = computed(() => {
-  const data = pageContext.data as { blogs?: Blog[] } | undefined;
+  const data = pageContext.data as { blogs?: BlogListItem[] } | undefined;
 
   if (pageContext.urlPathname !== "/" || !data?.blogs) return undefined;
 

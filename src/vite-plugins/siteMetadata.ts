@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { cwd } from "node:process";
 
 import { XMLParser } from "fast-xml-parser";
@@ -16,7 +16,7 @@ import { unified } from "unified";
 import { visit } from "unist-util-visit";
 import type { Plugin } from "vite";
 
-import { blogUrl, blogs, contentHtml } from "../pages/blog/@slug/lib";
+import { blogUrl, blogs, contentHtml, getBlog } from "../pages/blog/@slug/lib";
 import type { BlogFile } from "../pages/blog/@slug/lib";
 import {
   ATOM_RECENT_LIMIT,
@@ -29,7 +29,9 @@ import {
 
 const outputDir = resolve(cwd(), "dist", "client");
 const atomArchiveOutputDir = resolve(outputDir, "atom", "archive");
+const blogPreviewOutputDir = resolve(outputDir, "blog-previews");
 const feedHistoryNamespace = "http://purl.org/syndication/history/1.0";
+const previewWindowSize = 8;
 
 const absoluteUrl = (pathname: string) => {
   return new URL(pathname, SITE_ORIGIN).href;
@@ -201,6 +203,75 @@ export const atomContentHtml = (html: string, baseUrl: string) => {
   tree.children = cleanAtomContentChildren(tree.children, baseUrl);
 
   return htmlStringifier.stringify(tree);
+};
+
+const htmlFragment = (children: RootContent[]) => {
+  return htmlStringifier.stringify({
+    type: "root",
+    children,
+  } satisfies HastRoot);
+};
+
+const elementId = (node: RootContent) => {
+  if (node.type !== "element") return;
+
+  const id = node.properties["id"];
+
+  return typeof id === "string" ? id : undefined;
+};
+
+const isPreviewNode = (node: RootContent) => {
+  return node.type !== "text" || node.value.trim() !== "";
+};
+
+const blogPreviewWindows = (html: string) => {
+  const tree = htmlProcessor.parse(html) as HastRoot;
+  const previewNodes = tree.children.filter(isPreviewNode);
+  const defaultHtml = htmlFragment(previewNodes.slice(0, previewWindowSize));
+  const targets: { hash: string; html: string }[] = [];
+
+  previewNodes.forEach((child, index) => {
+    if (child.type !== "element" || !/^h[1-6]$/.test(child.tagName)) return;
+
+    const id = elementId(child);
+
+    if (!id) return;
+
+    targets.push({
+      hash: id,
+      html: htmlFragment(
+        previewNodes.slice(
+          Math.max(0, index - 1),
+          index + previewWindowSize + 1,
+        ),
+      ),
+    });
+  });
+
+  return {
+    html: defaultHtml,
+    targets,
+  };
+};
+
+const blogPreviewPath = (slug: string, hash?: string) => {
+  return `/blog-previews/${slug}/${hash ? encodeURIComponent(hash) : "index"}.json`;
+};
+
+const blogPreviewJson = async (blog: BlogFile, hash?: string) => {
+  const html = String(await contentHtml(blog));
+  const preview = blogPreviewWindows(html);
+  const targetHtml = hash
+    ? preview.targets.find((target) => target.hash === hash)?.html
+    : preview.html;
+
+  if (!targetHtml) return;
+
+  return JSON.stringify({
+    slug: blog.slug,
+    title: blog.title,
+    html: targetHtml,
+  });
 };
 
 const xmlParser = new XMLParser({
@@ -564,10 +635,58 @@ export const atomFeedDocuments = async (providedBlogs?: BlogFile[]) => {
   ];
 };
 
+export const blogPreviewDocuments = async (providedBlogs?: BlogFile[]) => {
+  const allBlogs = providedBlogs ?? (await blogs());
+
+  return (
+    await Promise.all(
+      allBlogs.map(async (blog) => {
+        const html = String(await contentHtml(blog));
+        const preview = blogPreviewWindows(html);
+
+        return [
+          {
+            path: blogPreviewPath(blog.slug),
+            json: JSON.stringify({
+              slug: blog.slug,
+              title: blog.title,
+              html: preview.html,
+            }),
+          },
+          ...preview.targets.map((target) => ({
+            path: blogPreviewPath(blog.slug, target.hash),
+            json: JSON.stringify({
+              slug: blog.slug,
+              title: blog.title,
+              html: target.html,
+            }),
+          })),
+        ];
+      }),
+    )
+  ).flat();
+};
+
+const previewRequest = (requestUrl?: string) => {
+  if (!requestUrl) return;
+
+  const pathname = new URL(requestUrl, SITE_ORIGIN).pathname;
+  const match = /^\/blog-previews\/([^/]+)\/([^/]+)\.json$/.exec(pathname);
+
+  if (!match?.[1] || !match[2]) return;
+
+  return {
+    slug: decodeURIComponent(match[1]),
+    hash: match[2] === "index" ? undefined : decodeURIComponent(match[2]),
+  };
+};
+
 export const generateSiteMetadata = async () => {
   await mkdir(outputDir, { recursive: true });
   await mkdir(atomArchiveOutputDir, { recursive: true });
+  await mkdir(blogPreviewOutputDir, { recursive: true });
   const atomDocuments = await atomFeedDocuments();
+  const previewDocuments = await blogPreviewDocuments();
 
   await Promise.all([
     writeFile(resolve(outputDir, "robots.txt"), robotsTxt()),
@@ -576,14 +695,52 @@ export const generateSiteMetadata = async () => {
     ...atomDocuments.map((document) =>
       writeFile(resolve(outputDir, document.path.slice(1)), document.xml),
     ),
+    ...previewDocuments.map(async (document) => {
+      const filePath = resolve(outputDir, document.path.slice(1));
+
+      await mkdir(dirname(filePath), { recursive: true });
+      await writeFile(filePath, document.json);
+    }),
   ]);
 };
 
 export const siteMetadataPlugin = (): Plugin => {
+  let isBuild = false;
+
   return {
     name: "vite-plugin-site-metadata",
-    apply: "build",
+    configResolved(config) {
+      isBuild = config.command === "build";
+    },
+    configureServer(server) {
+      server.middlewares.use(async (request, response, next) => {
+        const preview = previewRequest(request.url);
+
+        if (!preview) {
+          next();
+          return;
+        }
+
+        try {
+          const blog = await getBlog(preview.slug);
+          const json = await blogPreviewJson(blog, preview.hash);
+
+          if (!json) {
+            next();
+            return;
+          }
+
+          response.statusCode = 200;
+          response.setHeader("Content-Type", "application/json; charset=utf-8");
+          response.end(json);
+        } catch {
+          next();
+        }
+      });
+    },
     async closeBundle() {
+      if (!isBuild) return;
+
       await generateSiteMetadata();
     },
   };

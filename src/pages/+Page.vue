@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useData } from "vike-vue/useData";
 
-import type { Blog } from "./blog/@slug/types";
+import type { BlogListItem } from "./blog/@slug/types";
 
-const { blogs } = useData<{ blogs: Blog[] }>();
+const { blogs } = useData<{ blogs: BlogListItem[] }>();
 
 const formatDate = (time: number) => {
   const [year, month, day] = new Date(time)

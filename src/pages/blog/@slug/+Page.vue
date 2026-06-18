@@ -30,8 +30,8 @@ const formatDate = (value: string) => {
     </header>
     <BlogRenderer
       :current-slug="data.blog.slug"
+      :current-title="data.blog.title"
       :html="data.html"
-      :previews="data.previews"
     />
     <footer
       v-if="data.blog.latestModifiedAt"

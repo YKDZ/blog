@@ -1,17 +1,21 @@
-export type Blog = {
+export type BlogMetadata = {
   time: number;
   slug: string;
   title: string;
   description: string;
-  content: string;
   markdownPath: string;
   latestModifiedAt?: string;
 };
 
+export type Blog = BlogMetadata & {
+  content: string;
+};
+
+export type BlogListItem = Omit<BlogMetadata, "markdownPath">;
+
 export type BlogPageData = {
-  blog: Blog;
+  blog: BlogMetadata;
   html: string;
-  previews: BlogPreview[];
 };
 
 export type BlogPreview = {
