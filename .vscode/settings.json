@@ -2,6 +2,8 @@
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "oxc.fmt.configPath": "oxfmt.config.ts",
   "oxc.trace.server": "messages",
+  "oxc.enable.oxfmt": true,
+  "oxc.enable.oxlint": true,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.codeActionsOnSave": {
