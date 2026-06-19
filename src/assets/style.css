@@ -235,6 +235,14 @@
     }
   }
 
+  @media print {
+    [data-theme-picker],
+    [data-markdown-source-link],
+    .heading-anchor {
+      display: none !important;
+    }
+  }
+
   [data-preview-target="true"] {
     background: var(--page-highlight-bg);
     outline: none;
