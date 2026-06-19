@@ -1,8 +1,8 @@
 export const SITE_ORIGIN = "https://ykdz.me";
-export const SITE_NAME = "ykdz.me";
+export const SITE_NAME = "一颗丁子 | ykdz.me";
 export const SITE_DISPLAY_NAME = "一颗丁子";
 export const SITE_DISPLAY_NAME_EMPHASIS = "丁";
-export const SITE_DESCRIPTION = `一颗游走于烹饪和软件工程的丁子的博客`;
+export const SITE_DESCRIPTION = `软件工程 | 烹饪 | Agent | 一颗丁子 | 个人博客 - 不会做饭的软件工程师不是好厨师`;
 export const SITE_LANGUAGE = "zh-CN";
 export const SITE_OG_LOCALE = SITE_LANGUAGE.replace("-", "_");
 export const SITE_AUTHOR = "YKDZ";
