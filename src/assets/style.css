@@ -219,10 +219,8 @@
       height: auto;
       margin-inline-start: calc(
         -1 *
-          (
-            var(--prose-page-inline-padding) + var(--prose-list-indent) +
-              var(--prose-list-item-padding)
-          )
+          (var(--prose-page-inline-padding) + var(--prose-list-indent) +
+            var(--prose-list-item-padding))
       );
       max-width: none;
       width: 100vw;
