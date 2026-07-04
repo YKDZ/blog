@@ -6,6 +6,9 @@ import {
   SITE_LANGUAGE,
   SITE_NAME,
   SITE_ORIGIN,
+  SITE_SOCIAL_IMAGE,
+  SITE_SOCIAL_IMAGE_HEIGHT,
+  SITE_SOCIAL_IMAGE_WIDTH,
 } from "./site";
 
 type JsonLdValue =
@@ -42,6 +45,29 @@ const websiteStructuredData = () => {
   } satisfies JsonLdObject;
 };
 
+const imageStructuredData = () => {
+  return {
+    "@type": "ImageObject",
+    url: siteUrl(SITE_SOCIAL_IMAGE),
+    width: SITE_SOCIAL_IMAGE_WIDTH,
+    height: SITE_SOCIAL_IMAGE_HEIGHT,
+  } satisfies JsonLdObject;
+};
+
+const blogPostListItemStructuredData = (blog: BlogListItem) => {
+  return {
+    "@type": "BlogPosting",
+    "@id": siteUrl(`${blogUrl(blog.slug)}#blogposting`),
+    headline: blog.title,
+    url: siteUrl(blogUrl(blog.slug)),
+    datePublished: new Date(blog.time).toISOString(),
+    dateModified: blog.latestModifiedAt ?? new Date(blog.time).toISOString(),
+    description: blog.description,
+    image: imageStructuredData(),
+    author: personStructuredData(),
+  } satisfies JsonLdObject;
+};
+
 const blogStructuredData = (blogs: BlogListItem[]) => {
   return {
     "@type": "Blog",
@@ -54,15 +80,7 @@ const blogStructuredData = (blogs: BlogListItem[]) => {
     isPartOf: {
       "@id": siteUrl("/#website"),
     },
-    blogPost: blogs.map((blog) => ({
-      "@type": "BlogPosting",
-      "@id": siteUrl(`${blogUrl(blog.slug)}#blogposting`),
-      headline: blog.title,
-      url: siteUrl(blogUrl(blog.slug)),
-      datePublished: new Date(blog.time).toISOString(),
-      dateModified: blog.latestModifiedAt ?? new Date(blog.time).toISOString(),
-      description: blog.description,
-    })),
+    blogPost: blogs.map(blogPostListItemStructuredData),
   } satisfies JsonLdObject;
 };
 
@@ -86,6 +104,7 @@ export const blogPostingStructuredData = (blog: BlogMetadata) => {
     "@id": `${url}#blogposting`,
     headline: blog.title,
     description: blog.description,
+    image: imageStructuredData(),
     datePublished: new Date(blog.time).toISOString(),
     dateModified: blog.latestModifiedAt ?? new Date(blog.time).toISOString(),
     author: personStructuredData(),

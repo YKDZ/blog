@@ -39,6 +39,16 @@ test("首页结构化数据描述站点和博客索引", () => {
             "@id": "https://ykdz.me/blog/demo-post/#blogposting",
             headline: "Demo Post",
             description: "Demo description",
+            image: {
+              "@type": "ImageObject",
+              url: "https://ykdz.me/og-image.png",
+              width: 1280,
+              height: 640,
+            },
+            author: expect.objectContaining({
+              "@type": "Person",
+              name: "YKDZ",
+            }),
           }),
         ],
       }),
@@ -54,6 +64,16 @@ test("文章结构化数据描述单篇 BlogPosting", () => {
       "@id": "https://ykdz.me/blog/demo-post/#blogposting",
       headline: "Demo Post",
       description: "Demo description",
+      image: {
+        "@type": "ImageObject",
+        url: "https://ykdz.me/og-image.png",
+        width: 1280,
+        height: 640,
+      },
+      author: expect.objectContaining({
+        "@type": "Person",
+        name: "YKDZ",
+      }),
       dateModified: "2026-06-17T03:30:00.000Z",
       inLanguage: "zh-CN",
       isPartOf: {
