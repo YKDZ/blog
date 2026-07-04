@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { cwd } from "node:process";
 
@@ -32,9 +33,84 @@ const atomArchiveOutputDir = resolve(outputDir, "atom", "archive");
 const blogPreviewOutputDir = resolve(outputDir, "blog-previews");
 const feedHistoryNamespace = "http://purl.org/syndication/history/1.0";
 const previewWindowSize = 8;
+const cspMetaPattern =
+  /<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/gi;
+const inlineScriptPattern =
+  /<script\b(?<attributes>[^>]*)>(?<content>[\s\S]*?)<\/script>/gi;
 
 const absoluteUrl = (pathname: string) => {
   return new URL(pathname, SITE_ORIGIN).href;
+};
+
+const htmlAttributeEscape = (value: string) => {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+};
+
+const sha256Source = (content: string) => {
+  return `'sha256-${createHash("sha256").update(content).digest("base64")}'`;
+};
+
+const inlineScriptHashes = (html: string) => {
+  return Array.from(html.matchAll(inlineScriptPattern))
+    .filter((match) => !/\ssrc\s*=/i.test(match.groups?.["attributes"] ?? ""))
+    .map((match) => sha256Source(match.groups?.["content"] ?? ""));
+};
+
+const contentSecurityPolicy = (html: string) => {
+  const scriptSources = ["'self'", ...inlineScriptHashes(html)];
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "form-action 'none'",
+    `script-src ${scriptSources.join(" ")}`,
+    "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "manifest-src 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+};
+
+const htmlFiles = async (dir: string): Promise<string[]> => {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = await Promise.all(
+    entries.map(async (entry) => {
+      const filePath = resolve(dir, entry.name);
+
+      if (entry.isDirectory()) return htmlFiles(filePath);
+      if (entry.isFile() && entry.name.endsWith(".html")) return [filePath];
+
+      return [];
+    }),
+  );
+
+  return files.flat();
+};
+
+export const injectContentSecurityPolicy = async () => {
+  const files = await htmlFiles(outputDir);
+
+  await Promise.all(
+    files.map(async (filePath) => {
+      const html = await readFile(filePath, "utf-8");
+      const withoutExistingCsp = html.replace(cspMetaPattern, "");
+      const csp = htmlAttributeEscape(
+        contentSecurityPolicy(withoutExistingCsp),
+      );
+      const cspMeta = `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+
+      if (!withoutExistingCsp.includes("<head>")) return;
+
+      await writeFile(
+        filePath,
+        withoutExistingCsp.replace("<head>", `<head>\n    ${cspMeta}`),
+      );
+    }),
+  );
 };
 
 const rfc3339DateTime =
@@ -742,6 +818,7 @@ export const siteMetadataPlugin = (): Plugin => {
       if (!isBuild) return;
 
       await generateSiteMetadata();
+      await injectContentSecurityPolicy();
     },
   };
 };
