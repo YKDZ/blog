@@ -2,6 +2,8 @@
 import { useClipboard, useEventListener } from "@vueuse/core";
 import { computed, nextTick, onMounted, ref } from "vue";
 
+import { setTrustedBlogHtml } from "@/trustedTypes";
+
 import BlogContent from "./BlogContent.vue";
 import { headingIdFromText } from "./plugins/headingId";
 import type { BlogPreview } from "./types";
@@ -127,7 +129,7 @@ const previewHasHash = (preview: BlogPreview, hash: string) => {
   if (hash === headingIdFromText(preview.title)) return true;
 
   const template = document.createElement("template");
-  template.innerHTML = preview.html;
+  setTrustedBlogHtml(template, preview.html);
 
   return Boolean(
     template.content.querySelector<HTMLElement>(`#${CSS.escape(hash)}`),

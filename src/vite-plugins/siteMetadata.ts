@@ -71,6 +71,8 @@ const contentSecurityPolicy = (html: string) => {
     "font-src 'self'",
     "connect-src 'self'",
     "manifest-src 'self'",
+    "trusted-types vue blog-html",
+    "require-trusted-types-for 'script'",
     "upgrade-insecure-requests",
   ].join("; ");
 };
