@@ -15,17 +15,18 @@
 
 以及我还有一些电子洁癖：
 
-- 一定会使用 .devcontainer，且使用自定义 Dockerfile 而不是 features 以确保镜像不会包含我不需要的工具（例如 typescript-node 镜像就自带 eslint 和对应扩展）
+- 会使用 .devcontainer，且使用自定义 Dockerfile 而不是 features 以确保镜像不会包含我不需要的工具（例如 typescript-node 镜像就自带 eslint 和对应扩展）
 - 项目结构一定是 Turborepo 管理的 Monorepo，方便程序化地维护包边界防止架构腐坏
-- 一定会使用最新的 pnpm 和 Node LTS
-- 一定会使用 pnpm catalog 统一声明所有依赖的版本
-- 一定会有 `#/*` 导入前缀
-- 一定会让项目有一个根 `check` 命令可以运行所有包的 lint、fmt、typecheck、test，方便 Agent 形成反馈循环
-- 一定会使用 Dependabot 和 Github Actions
-- 一定会在 .vscode 中声明配置和扩展列表
+- 对 TS 库类型的包一定会使用 [JIT-Package](https://turborepo.dev/docs/core-concepts/internal-packages#just-in-time-packages)，因此也会广泛使用 [Node.js subpath imports](https://nodejs.org/api/packages.html#imports) 功能代替 `compilerOptions.path`
+- 会使用最新的 pnpm 和 Node LTS
+- 会使用 pnpm catalog 统一声明所有依赖的版本
+- 会让项目有一个根 `check` 命令可以运行所有包的 lint、fmt、typecheck、test，方便 Agent 形成反馈循环
+- 会使用 Dependabot 和 Github Actions
+- 会在 .vscode 中声明配置和扩展列表
 - 采取严苛的 oxlint 和 tsconfig 规则集
+- tsconfig 中 `target`、`module` 和 `moduleResolution` 的值会用小写（Agent 普遍大写）
 
-维护一个 skill 当然也可以在一定程度上满足我的需求，但是怎么解决依赖 uses 和 Node 版本最新的问题？每次都让模型去查主页听起来不错，但是我嫌他浪费 token。用自然语言描述我的一些隐性的需求也实在很低效且不稳定。同时也为了提高技术设施层的确定性，不让我的项目从根上就开始一股 AI 的混乱味道，我选择自己维护一个脚手架。
+维护一个 skill 当然也可以在一定程度上满足我的需求，但是怎么解决依赖 uses 和 Node 版本最新的问题？每次都让模型去查主页听起来不错，但是我嫌他浪费 token。为了这种高度可重用的过程浪费 Token 很不值得。用自然语言描述我的一些隐性的需求也实在很低效且不稳定。为了提高技术设施层的确定性，不让我的项目从一开始就一股 AI 的混乱味道，我选择自己维护一个脚手架。
 
 ## 设计和实现
 
@@ -42,7 +43,7 @@
 
 依赖更新当然不能用自定义 updater 实现，基本思路是在仓库根目录维护一个 pnpm-workspace.yaml 和 Cargo.toml，让 Dependabot 去负责更新这两个文件引用的依赖版本。CLI 构造 preset 时再从文件中读取版本即可。
 
-在项目创建后，就应该遵循依赖最小原则，不应该再依赖 template 这个外部工具存在。因此我没有设计任何更新现有项目的功能（add 功能也依赖 .template 目录存在，不使用就直接删除即可，已经添加的子包则没有任何删除或更新路径），现存项目的的依赖就用生成时包含的 Dependabot 进行更新即可。
+在项目创建后，就应该遵循依赖最小原则，不应该再强制依赖 template 这个外部工具存在。因此我没有设计任何更新现有项目的功能（add 功能也依赖 `.template` 目录存在，不使用就直接删除即可，已经添加的子包则没有任何删除或更新路径），现存项目的的依赖就用生成时包含的 Dependabot 进行更新即可。
 
 ## 效果
 
