@@ -45,13 +45,13 @@
 
 在项目创建后，就应该遵循依赖最小原则，不应该再强制依赖 template 这个外部工具存在。因此我没有设计任何更新现有项目的功能（add 功能也依赖 `.template` 目录存在，不使用就直接删除即可，已经添加的子包则没有任何删除或更新路径），现存项目的的依赖就用生成时包含的 Dependabot 进行更新即可。
 
+由于有在旧的仓库中 `add` 新包的功能，所以需要确保这些 preset 不仅可以单独工作，也可以在被组合后保持功能正常，因此我设计了笛卡尔积测试矩阵，将所有 preset 两两组合并利用 `pnpm check` 做 ci 时验证。
+
 ## 效果
 
 你可以运行 `pnpm dlx @ykdz/template@latest init my-app --preset vike-app --yes` 生成一个新的 vike-app 模板（生成器不会替你 `git init` / `pnpm install`）。你也可以在根目录执行 `x` 向这个 Web APP 添加一个 `packages/shared` 的纯 TS 库，我一般把前后端同构的工具函数和 zod / valibot schema 都放在这里。
 
 有了 template，我可以在几十秒内就初始化一个完全符合我癖好和要求的项目脚手架。我的 Agent 在添加新的 ts 库来做架构隔离时也不需要自己发明仓库结构，而是可以关注业务代码。
-
-为了这种灵活性，也做了一些取舍。最让我在意的是为了动态生成 tsconfig 等，就无法保持每一个 preset 自己目录树的完整性（例如 preset 内实际上没有自己的 tsconfig）。这就导致我不能在 IDE 内把 preset 作为一个完整的项目获取正确的 LSP 功能。作为替代，我设计了笛卡尔积测试矩阵，将所有 preset 组合并利用根 check 做 ci 时验证，虽然把错误延后了，但是至少还是可以在发版前拦截它们的。
 
 ## 我的编码实践
 
