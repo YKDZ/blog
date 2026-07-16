@@ -3,6 +3,15 @@
 
 @layer base {
   :root {
+    --font-sans:
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC",
+      "Source Han Sans SC", "WenQuanYi Micro Hei", sans-serif;
+    --font-reading:
+      "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
     --page-bg: #faf7f5;
     --page-fg: #000000;
     --page-fg-muted: #5f5954;
@@ -31,19 +40,7 @@
 
   html {
     background: var(--page-bg);
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      "PingFang SC",
-      "Hiragino Sans GB",
-      "Microsoft YaHei",
-      "Noto Sans CJK SC",
-      "Source Han Sans SC",
-      "WenQuanYi Micro Hei",
-      sans-serif;
+    font-family: var(--font-sans);
     overflow-x: clip;
     overflow-y: scroll;
     scroll-padding-top: var(--site-header-height);
@@ -72,7 +69,78 @@
 
   .prose {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+  }
+
+  .blog-prose {
+    color: var(--page-fg);
+    font-family: var(--font-reading);
+    font-size: 1.0625rem;
+    font-weight: 400;
+    hanging-punctuation: allow-end;
+    letter-spacing: 0;
+    line-break: strict;
+    line-height: 1.78;
+    margin-inline: auto;
+    max-width: 38rem;
+    orphans: 2;
+    text-wrap: pretty;
+    widows: 2;
+    word-break: normal;
+  }
+
+  .blog-prose :where(p) {
+    margin-block: 1.05em;
+  }
+
+  .blog-prose :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-reading);
+    font-weight: 650;
+    letter-spacing: 0;
+    line-height: 1.38;
+    text-wrap: balance;
+  }
+
+  .blog-prose :where(h2) {
+    font-size: 1.65em;
+    margin-block-end: 0.75em;
+    margin-block-start: 2.05em;
+  }
+
+  .blog-prose :where(h3) {
+    font-size: 1.35em;
+    margin-block-end: 0.7em;
+    margin-block-start: 1.8em;
+  }
+
+  .blog-prose :where(h4) {
+    font-size: 1.18em;
+    margin-block-end: 0.6em;
+    margin-block-start: 1.6em;
+  }
+
+  .blog-prose :where(ul, ol) {
+    margin-block: 1.05em;
+  }
+
+  .blog-prose :where(li) {
+    margin-block: 0.35em;
+    padding-inline-start: 0.25em;
+  }
+
+  .blog-prose :where(blockquote) {
+    border-inline-start-width: 3px;
+    font-style: normal;
+    margin-block: 1.35em;
+    padding-inline-start: 1em;
+  }
+
+  .blog-prose :where(hr) {
+    margin-block: 2.25em;
+  }
+
+  .blog-prose :where(pre) {
+    margin-block: 1.8em;
   }
 
   .prose pre.shiki {
@@ -228,6 +296,11 @@
   }
 
   @media (min-width: 768px) {
+    .blog-prose {
+      font-size: 1.125rem;
+      max-width: 40rem;
+    }
+
     .prose :not(pre) > code {
       padding: 0.3em 0.3em;
     }

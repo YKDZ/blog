@@ -22,7 +22,9 @@ const formatDate = (value: string | number) => {
 
 <template>
   <article class="md:pb-[50vh]">
-    <header class="mb-10 border-b border-(--page-border-soft) pb-8 text-center">
+    <header
+      class="mx-auto mb-10 max-w-2xl border-b border-(--page-border-soft) pb-8 text-center"
+    >
       <time
         class="mb-3 block text-xs leading-6 text-(--page-fg-muted)"
         :datetime="new Date(data.blog.time).toISOString()"
@@ -31,7 +33,7 @@ const formatDate = (value: string | number) => {
       </time>
       <h1
         :id="titleId"
-        class="scroll-mt-[calc(var(--site-header-height)+0.5rem)] text-3xl leading-tight font-semibold tracking-normal sm:text-4xl"
+        class="scroll-mt-[calc(var(--site-header-height)+0.5rem)] text-3xl leading-snug font-semibold tracking-normal text-balance sm:text-4xl"
       >
         {{ data.blog.title }}
       </h1>
@@ -43,7 +45,7 @@ const formatDate = (value: string | number) => {
     />
     <footer
       v-if="data.blog.latestModifiedAt"
-      class="mt-12 flex justify-between pt-5 text-xs text-(--page-fg-muted)"
+      class="mx-auto mt-12 flex max-w-2xl justify-between pt-5 text-xs text-(--page-fg-muted)"
     >
       <span>
         修改于

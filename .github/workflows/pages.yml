@@ -19,9 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -29,29 +32,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: package.json
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Test
-        run: pnpm test
+      - name: Check
+        run: pnpm run check
 
   build:
     needs: checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -59,7 +59,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: package.json
           cache: pnpm
 
       - name: Install dependencies
