@@ -21,7 +21,7 @@ catalog:
   "@vueuse/core": ^14.3.0
   fast-xml-parser: ^5.10.0
   fast-xml-validator: ^1.2.0
-  oxfmt: ^0.59.0
+  oxfmt: ^0.61.0
   oxlint: ^1.74.0
   oxlint-tsgolint: ^0.24.0
   rehype-parse: ^9.0.1
