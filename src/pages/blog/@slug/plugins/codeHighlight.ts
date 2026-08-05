@@ -83,6 +83,9 @@ const rehypeCodeHighlight: Plugin<[], Root> = () => {
             trimFinalLineBreak(code.children.map(textContent).join("")),
             languageFromCode(code),
           );
+
+          if (!highlighted) return;
+
           const [pre] = highlighted.children;
 
           if (isElement(pre)) {

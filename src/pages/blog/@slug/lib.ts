@@ -5,47 +5,18 @@ import { cwd } from "node:process";
 import { promisify } from "node:util";
 
 import type { Root, RootContent } from "mdast";
-import rehypeSanitize, {
-  defaultSchema,
-  type Options as SanitizeSchema,
-} from "rehype-sanitize";
-import rehypeStringify from "rehype-stringify";
-import remarkCjkFriendly from "remark-cjk-friendly";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import { unified, type Plugin } from "unified";
+import { unified } from "unified";
 
+import { renderMarkdown } from "../../../lib/markdown";
+import { descriptionFromMarkdown } from "../../../lib/markdownDescription";
+import { firstCharacters } from "../../../lib/title";
 import { normalizeMarkdownResourceUrls } from "./markdownResources";
-import rehypeCodeHighlight from "./plugins/codeHighlight";
-import rehypeHeadingId from "./plugins/headingId";
-import rehypeLinkTarget from "./plugins/linkTarget";
 import remarkUrlTransform from "./plugins/urlTransform";
 import type { Blog, BlogListItem, BlogMetadata } from "./types";
 
 const execFileAsync = promisify(execFile);
-
-const sanitizeSchema: SanitizeSchema = {
-  ...defaultSchema,
-  attributes: {
-    ...defaultSchema.attributes,
-    a: [
-      ...(defaultSchema.attributes?.["a"] ?? []),
-      ["target", "_blank"],
-      ["rel", "noopener", "noreferrer"],
-    ],
-    img: [
-      ...(defaultSchema.attributes?.["img"] ?? []),
-      "height",
-      "loading",
-      "sizes",
-      "srcset",
-      "srcSet",
-      "width",
-    ],
-  },
-  clobberPrefix: "",
-};
 
 const textContent = (node: RootContent): string => {
   if ("value" in node && typeof node.value === "string") return node.value;
@@ -62,30 +33,11 @@ const markdownAst = (content: string): Root => {
   return processor.parse(normalizeMarkdownResourceUrls(content)) as Root;
 };
 
-const remarkRemoveFirstHeading: Plugin<[], Root> = () => {
-  return function (tree) {
-    const index = tree.children.findIndex((child) => child.type === "heading");
-
-    if (index !== -1) tree.children.splice(index, 1);
-  };
-};
-
 export const contentHtml = async (blog: BlogFile) => {
-  const html = await unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkRemoveFirstHeading)
-    .use(remarkUrlTransform, { blog })
-    .use(remarkCjkFriendly)
-    .use(remarkRehype)
-    .use(rehypeLinkTarget)
-    .use(rehypeSanitize, sanitizeSchema)
-    .use(rehypeCodeHighlight)
-    .use(rehypeHeadingId)
-    .use(rehypeStringify)
-    .process(normalizeMarkdownResourceUrls(blog.content));
-
-  return html;
+  return renderMarkdown(blog.content, {
+    removeFirstHeading: true,
+    applyPlugin: (processor) => processor.use(remarkUrlTransform, { blog }),
+  });
 };
 
 export type BlogFile = Omit<Blog, "description" | "markdownPath"> & {
@@ -131,25 +83,8 @@ export const firstMarkdownHeading = (content: string): string | undefined => {
   return title || undefined;
 };
 
-const truncateDescription = (description: string, maxLength = 160) => {
-  if (description.length <= maxLength) return description;
-
-  return `${description.slice(0, maxLength).trimEnd()}...`;
-};
-
 export const markdownDescription = (content: string): string | undefined => {
-  const children = markdownAst(content).children;
-  const firstHeadingIndex = children.findIndex(
-    (child) => child.type === "heading",
-  );
-  const description = children
-    .slice(firstHeadingIndex === -1 ? 0 : firstHeadingIndex + 1)
-    .filter((child) => child.type === "paragraph")
-    .map(textContent)
-    .map((text) => text.replace(/\s+/g, " ").trim())
-    .find(Boolean);
-
-  return description ? truncateDescription(description) : undefined;
+  return descriptionFromMarkdown(content);
 };
 
 export const stripFirstMarkdownHeading = (content: string): string => {
@@ -202,7 +137,9 @@ const blogFromFile = (options: {
     publicPath: publicUrlFromPath(options.filePath),
     time: Number(options.dirname.split("-", 1)),
     slug: options.slug,
-    title: firstMarkdownHeading(options.content) || options.slug,
+    title:
+      firstMarkdownHeading(options.content) ||
+      firstCharacters(options.content, 16),
     description: markdownDescription(options.content) || options.slug,
     content: options.content,
     latestModifiedAt: options.latestModifiedAt,

@@ -16,6 +16,16 @@ export type BlogListItem = Omit<BlogMetadata, "markdownPath">;
 export type BlogPageData = {
   blog: BlogMetadata;
   html: string;
+  babel: BlogBabelInfo;
+};
+
+export type BlogBabelInfo = {
+  location: {
+    hexagon: string;
+    wall: number;
+    shelfOnWall: number;
+    volume: number;
+  };
 };
 
 export type BlogPreview = {

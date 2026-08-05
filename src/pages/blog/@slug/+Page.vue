@@ -2,7 +2,8 @@
 import { useData } from "vike-vue/useData";
 import { computed } from "vue";
 
-import { SITE_LANGUAGE } from "@/site.ts";
+import BlogArticleFooter from "@/components/BlogArticleFooter.vue";
+import BlogArticleHeader from "@/components/BlogArticleHeader.vue";
 
 import BlogRenderer from "./BlogRenderer.vue";
 import { headingIdFromText } from "./plugins/headingId";
@@ -18,49 +19,32 @@ const formatDate = (value: string | number) => {
     .split("-");
   return `${year} 年 ${Number(month)} 月 ${Number(day)} 日`;
 };
+
+const modifiedAtLabel = computed(() => {
+  if (!data.blog.latestModifiedAt) return undefined;
+
+  return `修改于 ${formatDate(data.blog.latestModifiedAt)}`;
+});
 </script>
 
 <template>
   <article class="md:pb-[50vh]">
-    <header
-      class="mx-auto mb-10 max-w-2xl border-b border-(--page-border-soft) pb-8 text-center"
-    >
-      <time
-        class="mb-3 block text-xs leading-6 text-(--page-fg-muted)"
-        :datetime="new Date(data.blog.time).toISOString()"
-      >
-        {{ formatDate(data.blog.time) }}
-      </time>
-      <h1
-        :id="titleId"
-        class="scroll-mt-[calc(var(--site-header-height)+0.5rem)] text-3xl leading-snug font-semibold tracking-normal text-balance sm:text-4xl"
-      >
-        {{ data.blog.title }}
-      </h1>
-    </header>
+    <BlogArticleHeader
+      :title="data.blog.title"
+      :title-id="titleId"
+      :time-label="formatDate(data.blog.time)"
+    />
     <BlogRenderer
       :current-slug="data.blog.slug"
       :current-title="data.blog.title"
       :html="data.html"
     />
-    <footer
+    <BlogArticleFooter
       v-if="data.blog.latestModifiedAt"
-      class="mx-auto mt-12 flex max-w-2xl justify-between pt-5 text-xs text-(--page-fg-muted)"
-    >
-      <span>
-        修改于
-        <time :datetime="data.blog.latestModifiedAt">
-          {{ formatDate(data.blog.latestModifiedAt) }}
-        </time></span
-      ><a
-        :aria-label="`查看《${data.blog.title}》的 Markdown 原文`"
-        :hreflang="SITE_LANGUAGE"
-        :href="data.blog.markdownPath"
-        data-markdown-source-link
-        rel="alternate"
-        type="text/markdown"
-        >Markdown 原文</a
-      >
-    </footer>
+      :aria-title="data.blog.title"
+      :babel-location="data.babel.location"
+      :markdown-href="data.blog.markdownPath"
+      :modified-at="modifiedAtLabel"
+    />
   </article>
 </template>

@@ -5,3 +5,10 @@ public/optimized-images
 .vercel
 
 AGENTS.md
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

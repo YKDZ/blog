@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// oxlint-disable-next-line import/no-unassigned-import
 import "@/assets/style.css";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
@@ -42,6 +43,16 @@ const setMode = (nextMode: ThemeMode) => {
 
 const onSystemThemeChange = () => {
   if (mode.value === "auto") applyTheme("auto");
+};
+
+const openBabel = (event: MouseEvent) => {
+  // Vike 会把同 pathname 的链接当作同页导航，可能不清除 hash；
+  // 这里直接替换为无 hash 的 URL，再手动触发 hashchange 回到书架界面。
+  if (window.location.pathname === "/babel/" && window.location.hash) {
+    event.preventDefault();
+    history.pushState(null, "", "/babel/");
+    window.dispatchEvent(new Event("hashchange"));
+  }
 };
 
 onMounted(() => {
@@ -93,18 +104,29 @@ onBeforeUnmount(() => {
             {{ character }}
           </span>
         </a>
-        <div class="flex bg-(--page-surface)" data-theme-picker>
-          <button
-            v-for="themeMode in themeModes"
-            :key="themeMode.value"
-            type="button"
-            class="theme-option -ml-px h-7 min-w-7 border border-(--page-border-soft) px-2 text-xs transition-colors duration-200 first:ml-0 hover:relative hover:z-10 hover:border-(--page-border-hover) focus-visible:relative focus-visible:z-10 focus-visible:border-(--page-border-hover)"
-            :data-theme-option="themeMode.value"
-            :aria-pressed="mounted ? mode === themeMode.value : undefined"
-            @click="setMode(themeMode.value)"
+        <div class="flex items-center justify-between gap-3">
+          <a
+            href="/babel/"
+            aria-label="图书馆"
+            title="图书馆"
+            class="inline-flex h-7 w-7 items-center justify-center border border-(--page-border-soft) bg-(--page-surface) transition-colors duration-200 hover:border-(--page-border-hover) focus-visible:border-(--page-border-hover)"
+            @click="openBabel"
           >
-            {{ themeMode.label }}
-          </button>
+            <span class="icon-[mdi--bookshelf]"></span>
+          </a>
+          <div class="flex bg-(--page-surface)" data-theme-picker>
+            <button
+              v-for="themeMode in themeModes"
+              :key="themeMode.value"
+              type="button"
+              class="theme-option -ml-px h-7 min-w-7 border border-(--page-border-soft) px-2 text-xs transition-colors duration-200 first:ml-0 hover:relative hover:z-10 hover:border-(--page-border-hover) focus-visible:relative focus-visible:z-10 focus-visible:border-(--page-border-hover)"
+              :data-theme-option="themeMode.value"
+              :aria-pressed="mounted ? mode === themeMode.value : undefined"
+              @click="setMode(themeMode.value)"
+            >
+              {{ themeMode.label }}
+            </button>
+          </div>
         </div>
       </div>
     </header>

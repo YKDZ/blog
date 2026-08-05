@@ -39,6 +39,8 @@
     "vue-tsc": "catalog:"
   },
   "devDependencies": {
+    "@iconify/json": "catalog:",
+    "@iconify/tailwind4": "catalog:",
     "@tailwindcss/typography": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tsconfig/node24": "catalog:",
