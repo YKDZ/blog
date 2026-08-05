@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// oxlint-disable-next-line import/no-unassigned-import
-import "@/assets/style.css";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import { SITE_DISPLAY_NAME, SITE_DISPLAY_NAME_EMPHASIS } from "@/site";
