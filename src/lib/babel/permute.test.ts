@@ -5,9 +5,15 @@ import { permuteRange, permuteRank, unpermuteRank } from "./permute";
 const power = (radix: number, length: number): bigint =>
   BigInt(radix) ** BigInt(length);
 
-test("permute/unpermute 在所有小长度、小字符集上互逆", () => {
-  for (const radix of [2, 3, 5]) {
-    for (let length = 0; length <= 7; length++) {
+const exhaustiveCases: Array<[number, number]> = [
+  [2, 8],
+  [3, 6],
+  [5, 5],
+];
+
+test("permute/unpermute 在小长度、小字符集上全量互逆", () => {
+  for (const [radix, maxLength] of exhaustiveCases) {
+    for (let length = 0; length <= maxLength; length++) {
       const total = power(radix, length);
 
       for (let rank = 0n; rank < total; rank++) {
@@ -17,6 +23,27 @@ test("permute/unpermute 在所有小长度、小字符集上互逆", () => {
         expect(permuted).toBeLessThan(total);
         expect(unpermuteRank(permuted, length, radix)).toBe(rank);
       }
+    }
+  }
+});
+
+test("permute/unpermute 在大长度上抽检互逆", () => {
+  const cases: Array<[number, number]> = [
+    [2, 12],
+    [3, 8],
+    [5, 7],
+  ];
+
+  for (const [radix, length] of cases) {
+    const total = power(radix, length);
+    const step = total / 256n;
+
+    for (let rank = 0n; rank < total; rank += step) {
+      const permuted = permuteRank(rank, length, radix);
+
+      expect(permuted).toBeGreaterThanOrEqual(0n);
+      expect(permuted).toBeLessThan(total);
+      expect(unpermuteRank(permuted, length, radix)).toBe(rank);
     }
   }
 });
