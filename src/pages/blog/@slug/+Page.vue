@@ -42,9 +42,9 @@ const modifiedAtLabel = computed(() => {
     <BlogArticleFooter
       v-if="data.blog.latestModifiedAt"
       :aria-title="data.blog.title"
-      :babel-location="data.babel.location"
       :markdown-href="data.blog.markdownPath"
       :modified-at="modifiedAtLabel"
+      :shelf-label="data.babel.shelfLabel"
     />
   </article>
 </template>

@@ -4,34 +4,15 @@ import path, { resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { promisify } from "node:util";
 
-import type { Root, RootContent } from "mdast";
-import remarkGfm from "remark-gfm";
-import remarkParse from "remark-parse";
-import { unified } from "unified";
-
 import { renderMarkdown } from "../../../lib/markdown";
-import { descriptionFromMarkdown } from "../../../lib/markdownDescription";
-import { firstCharacters } from "../../../lib/title";
-import { normalizeMarkdownResourceUrls } from "./markdownResources";
+import {
+  descriptionWithFallback,
+  metadataWithFallback,
+} from "../../../lib/markdownMetadata";
 import remarkUrlTransform from "./plugins/urlTransform";
 import type { Blog, BlogListItem, BlogMetadata } from "./types";
 
 const execFileAsync = promisify(execFile);
-
-const textContent = (node: RootContent): string => {
-  if ("value" in node && typeof node.value === "string") return node.value;
-  if ("children" in node && Array.isArray(node.children)) {
-    return node.children.map(textContent).join("");
-  }
-
-  return "";
-};
-
-const markdownAst = (content: string): Root => {
-  const processor = unified().use(remarkParse).use(remarkGfm);
-
-  return processor.parse(normalizeMarkdownResourceUrls(content)) as Root;
-};
 
 export const contentHtml = async (blog: BlogFile) => {
   return renderMarkdown(blog.content, {
@@ -69,37 +50,7 @@ const encodeUrlPath = (urlPath: string): string => {
     .join("/");
 };
 
-export { normalizeMarkdownResourceUrls };
-
-export const firstMarkdownHeading = (content: string): string | undefined => {
-  const heading = markdownAst(content).children.find(
-    (child) => child.type === "heading",
-  );
-
-  if (!heading) return undefined;
-
-  const title = textContent(heading).trim();
-
-  return title || undefined;
-};
-
-export const markdownDescription = (content: string): string | undefined => {
-  return descriptionFromMarkdown(content);
-};
-
-export const stripFirstMarkdownHeading = (content: string): string => {
-  const tree = markdownAst(content);
-  const firstHeading = tree.children.find((child) => child.type === "heading");
-
-  if (!firstHeading?.position) return content;
-
-  return [
-    content.slice(0, firstHeading.position.start.offset),
-    content.slice(firstHeading.position.end.offset),
-  ]
-    .join("")
-    .replace(/^\s*\r?\n/, "");
-};
+export { normalizeMarkdownResourceUrls } from "./markdownResources";
 
 export const publicUrlFromPath = (filePath: string): string => {
   const relativePath = path.relative(PUBLIC_DIR, filePath);
@@ -132,15 +83,15 @@ const blogFromFile = (options: {
   content: string;
   latestModifiedAt?: string;
 }): BlogFile => {
+  const metadata = metadataWithFallback(options.content);
+
   return {
     filePath: options.filePath,
     publicPath: publicUrlFromPath(options.filePath),
     time: Number(options.dirname.split("-", 1)),
     slug: options.slug,
-    title:
-      firstMarkdownHeading(options.content) ||
-      firstCharacters(options.content, 16),
-    description: markdownDescription(options.content) || options.slug,
+    title: metadata.title,
+    description: metadata.description,
     content: options.content,
     latestModifiedAt: options.latestModifiedAt,
   };
@@ -185,8 +136,7 @@ export const publicBlog = (blog: BlogFile): Blog => {
     time: blog.time,
     slug: blog.slug,
     title: blog.title,
-    description:
-      blog.description || markdownDescription(blog.content) || blog.slug,
+    description: blog.description || descriptionWithFallback(blog.content),
     content: blog.content,
     markdownPath: blog.publicPath,
     latestModifiedAt: blog.latestModifiedAt,
@@ -198,8 +148,7 @@ export const publicBlogMetadata = (blog: BlogFile): BlogMetadata => {
     time: blog.time,
     slug: blog.slug,
     title: blog.title,
-    description:
-      blog.description || markdownDescription(blog.content) || blog.slug,
+    description: blog.description || descriptionWithFallback(blog.content),
     markdownPath: blog.publicPath,
     latestModifiedAt: blog.latestModifiedAt,
   };
@@ -210,8 +159,7 @@ export const publicBlogListItem = (blog: BlogFile): BlogListItem => {
     time: blog.time,
     slug: blog.slug,
     title: blog.title,
-    description:
-      blog.description || markdownDescription(blog.content) || blog.slug,
+    description: blog.description || descriptionWithFallback(blog.content),
     latestModifiedAt: blog.latestModifiedAt,
   };
 };

@@ -2,16 +2,15 @@ import { resolve } from "node:path";
 
 import { expect, test } from "vitest";
 
+import { descriptionFromMarkdown as markdownDescription } from "../../../lib/markdownMetadata";
+import { firstMarkdownHeading } from "../../../lib/markdownMetadata";
 import {
   blogUrl,
   contentHtml,
-  firstMarkdownHeading,
-  markdownDescription,
   normalizeMarkdownResourceUrls,
   PUBLIC_DIR,
   publicUrlFromPath,
   slugFromDirName,
-  stripFirstMarkdownHeading,
   type BlogFile,
 } from "./lib";
 import { headingIdFromText } from "./plugins/headingId";
@@ -60,11 +59,10 @@ test("规范化 Markdown 资源路径时跳过独立 URL", () => {
   ).toBe("![站外](https://example.com/demo image.png)\n[章节](#demo title)");
 });
 
-test("提取并剥离第一条 Markdown 标题", () => {
+test("提取第一条 Markdown 标题", () => {
   const content = "# 页面标题\n\n## 正文标题\n\n内容";
 
   expect(firstMarkdownHeading(content)).toBe("页面标题");
-  expect(stripFirstMarkdownHeading(content)).toBe("## 正文标题\n\n内容");
 });
 
 test("从第一条标题后的第一段正文提取文章描述", () => {

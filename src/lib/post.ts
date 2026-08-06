@@ -1,5 +1,4 @@
-import { descriptionFromMarkdown } from "./markdownDescription";
-import { firstCharacters } from "./title";
+import { metadataWithFallback } from "./markdownMetadata";
 
 export type PostCardItem = {
   title: string;
@@ -9,10 +8,20 @@ export type PostCardItem = {
   time?: string;
 };
 
+export type BookMetadata = {
+  title: string;
+  description: string;
+};
+
+/** 巴别图书的标题与描述：与博客共用同一份 Markdown 元数据提取逻辑。 */
+export const bookMetadata = (text: string): BookMetadata => {
+  return metadataWithFallback(text);
+};
+
 /**
  * 巴别图书的描述：与正常文章一样提取第一个标题后的第一个段落；
  * 没有段落时回退到文本最开头的 50 个字符。
  */
 export const bookDescription = (text: string): string => {
-  return descriptionFromMarkdown(text) ?? firstCharacters(text, 50);
+  return bookMetadata(text).description;
 };

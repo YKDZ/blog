@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import { watchDebounced } from "@vueuse/core";
 import { useData } from "vike-vue/useData";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  computed,
+  markRaw,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  type Component,
+} from "vue";
 
 import BlogArticleFooter from "@/components/BlogArticleFooter.vue";
 import BlogArticleHeader from "@/components/BlogArticleHeader.vue";
 import BlogListItem from "@/components/BlogListItem.vue";
-import { fromBase62, toBase62 } from "@/lib/babel/base62";
+import {
+  BASE62_ALPHABET,
+  fromBase62,
+  randomBase62,
+  toBase62,
+} from "@/lib/babel/base62";
+import { formatBookLocation } from "@/lib/babel/display";
 import { createLibrary, type BookItem } from "@/lib/babel/library";
-import { renderMarkdown } from "@/lib/markdownClient";
-import { bookDescription, type PostCardItem } from "@/lib/post";
-import { bookTitle } from "@/lib/title";
+import type { PostCardItem } from "@/lib/post";
 
-import BlogRenderer from "../blog/@slug/BlogRenderer.vue";
 import { headingIdFromText } from "../blog/@slug/plugins/headingId";
 import type { Data } from "./+data.server";
 
@@ -24,19 +35,6 @@ const library = createLibrary(data.charset, {
 
 const PAGE_SIZE = 20;
 
-const articleMap = computed(
-  () => new Map(data.articles.map((article) => [article.bookNumber, article])),
-);
-
-const formatDate = (time: number) => {
-  const [year, month, day] = new Date(time)
-    .toISOString()
-    .slice(0, 10)
-    .split("-");
-
-  return `${year} 年 ${Number(month)} 月 ${Number(day)} 日`;
-};
-
 // 书架号的四个值
 const hexagonInput = ref("0");
 const wallInput = ref("0");
@@ -45,6 +43,21 @@ const volumeInput = ref("0");
 
 const adjusterError = ref<string>();
 let activeVersion = 0;
+let ignoreNextInputChange = false;
+let lastIgnoredInputState: string | undefined;
+
+const randomizeStart = () => {
+  const hexagon = randomBase62(8);
+  const wall = Math.floor(Math.random() * 4);
+  const shelf = Math.floor(Math.random() * 5);
+  const volume = Math.floor(Math.random() * 32);
+
+  hexagonInput.value = hexagon;
+  wallInput.value = String(wall);
+  shelfInput.value = String(shelf);
+  volumeInput.value = String(volume);
+  lastIgnoredInputState = `${hexagon}|${wall}|${shelf}|${volume}|${queryInput.value}`;
+};
 
 const parseStartBookNumber = (): bigint => {
   const hexagon = hexagonInput.value.trim();
@@ -67,6 +80,7 @@ const startEnumeration = () => {
   try {
     const start = parseStartBookNumber();
     books.value = [];
+    cards.value = [];
     exhausted.value = false;
     void loadPage(start, false, version);
   } catch (error) {
@@ -81,12 +95,30 @@ const startEnumeration = () => {
 
 const mode = ref<"browse" | "query">("browse");
 const books = ref<BookItem[]>([]);
+const cards = ref<PostCardItem[]>([]);
 const loading = ref(false);
 const loadingMore = ref(false);
 const exhausted = ref(false);
 const browseError = ref<string>();
 const queryInput = ref("");
 let queryIterator: Generator<BookItem> | undefined;
+
+const loadCardItems = async (
+  collected: BookItem[],
+): Promise<PostCardItem[]> => {
+  const { bookMetadata } = await import("@/lib/post");
+
+  return collected.map((book) => {
+    const metadata = bookMetadata(book.text);
+
+    return {
+      title: metadata.title || "（空白）",
+      href: "#babel",
+      description: metadata.description,
+      time: "? 年 ? 月 ? 日",
+    };
+  });
+};
 
 const loadPage = async (from: bigint, append: boolean, version: number) => {
   const busy = append ? loadingMore : loading;
@@ -123,8 +155,17 @@ const loadPage = async (from: bigint, append: boolean, version: number) => {
 
     if (collected.length < PAGE_SIZE) exhausted.value = true;
 
-    if (append) books.value.push(...collected);
-    else books.value = collected;
+    const nextCards = await loadCardItems(collected);
+
+    if (version !== activeVersion) return;
+
+    if (append) {
+      books.value.push(...collected);
+      cards.value.push(...nextCards);
+    } else {
+      books.value = collected;
+      cards.value = nextCards;
+    }
   } catch (error) {
     if (version === activeVersion) {
       browseError.value =
@@ -166,8 +207,17 @@ const loadQueryPage = async (append: boolean, version: number) => {
 
     if (collected.length < PAGE_SIZE) exhausted.value = true;
 
-    if (append) books.value.push(...collected);
-    else books.value = collected;
+    const nextCards = await loadCardItems(collected);
+
+    if (version !== activeVersion) return;
+
+    if (append) {
+      books.value.push(...collected);
+      cards.value.push(...nextCards);
+    } else {
+      books.value = collected;
+      cards.value = nextCards;
+    }
   } catch (error) {
     if (version === activeVersion) {
       browseError.value =
@@ -191,6 +241,7 @@ const runQuery = () => {
 
   mode.value = "query";
   books.value = [];
+  cards.value = [];
   exhausted.value = false;
 
   try {
@@ -242,6 +293,16 @@ watchDebounced(
     [hexagon, wall, shelf, volume, query],
     [oldHexagon, oldWall, oldShelf, oldVolume, oldQuery],
   ) => {
+    if (ignoreNextInputChange) {
+      ignoreNextInputChange = false;
+      if (
+        `${hexagon}|${wall}|${shelf}|${volume}|${query}` ===
+        lastIgnoredInputState
+      ) {
+        return;
+      }
+    }
+
     const locationChanged =
       hexagon !== oldHexagon ||
       wall !== oldWall ||
@@ -258,17 +319,6 @@ watchDebounced(
   { debounce: 250, maxWait: 1000 },
 );
 
-const cardItem = (book: BookItem): PostCardItem => {
-  const article = articleMap.value.get(book.bookNumber.toString());
-
-  return {
-    title: article?.title ?? (bookTitle(book.text) || "（空白）"),
-    href: "#babel",
-    description: article?.description ?? bookDescription(book.text),
-    time: article ? formatDate(article.time) : `? 年 ? 月 ? 日`,
-  };
-};
-
 const onCardClick = (event: MouseEvent, book: BookItem) => {
   event.preventDefault();
   openBook(book);
@@ -277,17 +327,13 @@ const onCardClick = (event: MouseEvent, book: BookItem) => {
 // 阅读界面
 const view = ref<"browse" | "read">("browse");
 const currentBook = ref<BookItem>();
+const currentBookTitle = ref("（空书）");
 const rawMarkdownHref = ref<string>();
 const readerHtml = ref("");
 const readerRendering = ref(false);
 const readerError = ref<string>();
+const readerComponent = shallowRef<Component>();
 let previousRawUrl: string | undefined;
-
-const currentBookTitle = computed(() => {
-  const title = bookTitle(currentBook.value?.text ?? "");
-
-  return title || "（空书）";
-});
 
 const currentTitleId = computed(() =>
   headingIdFromText(currentBookTitle.value),
@@ -297,20 +343,20 @@ const currentBookMeta = computed(() => {
   return currentBook.value ? "? 年 ? 月 ? 日" : "";
 });
 
-const currentBookLocation = computed(() => {
-  // 阅读界面打开前不会渲染 footer；这里只是给类型一个安全回退。
-  if (!currentBook.value) {
-    return { hexagon: "0", wall: 0, shelfOnWall: 0, volume: 0 };
-  }
+const currentShelfLabel = computed(() => {
+  if (!currentBook.value) return "";
 
   const location = library.bookLocation(currentBook.value.bookNumber);
 
-  return {
-    hexagon: toBase62(location.hexagon),
-    wall: location.wall,
-    shelfOnWall: location.shelfOnWall,
-    volume: location.volume,
-  };
+  return formatBookLocation(
+    {
+      hexagon: toBase62(location.hexagon),
+      wall: location.wall,
+      shelfOnWall: location.shelfOnWall,
+      volume: location.volume,
+    },
+    { truncateHexagon: true },
+  );
 });
 
 const currentModifiedAt = computed(() =>
@@ -326,7 +372,9 @@ const showBook = async (book: BookItem) => {
   }
 
   currentBook.value = book;
+  currentBookTitle.value = "（空书）";
   view.value = "read";
+  window.scrollTo(0, 0);
   readerHtml.value = "";
   readerError.value = undefined;
   readerRendering.value = true;
@@ -339,6 +387,14 @@ const showBook = async (book: BookItem) => {
   rawMarkdownHref.value = previousRawUrl;
 
   try {
+    const [{ default: BlogRenderer }, { renderMarkdown }, { bookTitle }] =
+      await Promise.all([
+        import("../blog/@slug/BlogRenderer.vue"),
+        import("@/lib/markdownClient"),
+        import("@/lib/title"),
+      ]);
+    readerComponent.value = markRaw(BlogRenderer);
+    currentBookTitle.value = bookTitle(book.text) || "（空书）";
     readerHtml.value = await renderMarkdown(book.text, {
       removeFirstHeading: true,
     });
@@ -382,6 +438,8 @@ const navigateFromHash = () => {
 };
 
 onMounted(() => {
+  randomizeStart();
+  ignoreNextInputChange = true;
   window.addEventListener("hashchange", navigateFromHash);
   navigateFromHash();
 });
@@ -400,12 +458,11 @@ onBeforeUnmount(() => {
           hreflang="en"
           rel="noopener noreferrer"
           target="_blank"
-          aria-label="前往原版巴别图书馆（libraryofbabel.info）"
+          aria-label="前往原版巴别图书馆"
         >
           图书馆
         </a>
       </h1>
-      <p class="text-xs leading-6 text-(--page-fg-muted)">你想前往哪里？</p>
     </header>
 
     <article
@@ -490,9 +547,9 @@ onBeforeUnmount(() => {
       <template v-else>
         <div class="space-y-4">
           <BlogListItem
-            v-for="book in books"
+            v-for="(book, index) in books"
             :key="book.bookNumber.toString()"
-            :item="cardItem(book)"
+            :item="cards[index]!"
             @click="onCardClick($event, book)"
           />
         </div>
@@ -530,7 +587,8 @@ onBeforeUnmount(() => {
       <p v-else-if="readerError" class="text-xs text-red-600">
         {{ readerError }}
       </p>
-      <BlogRenderer
+      <component
+        :is="readerComponent"
         v-else
         :current-slug="'babel'"
         :current-title="currentBookTitle"
@@ -539,9 +597,9 @@ onBeforeUnmount(() => {
       <BlogArticleFooter
         v-if="currentBook"
         :aria-title="currentBookTitle"
-        :babel-location="currentBookLocation"
         :markdown-href="rawMarkdownHref ?? ''"
         :modified-at="currentModifiedAt"
+        :shelf-label="currentShelfLabel"
         markdown-target="_blank"
       />
     </article>

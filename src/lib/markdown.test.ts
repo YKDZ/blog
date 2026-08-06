@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { renderMarkdown } from "./markdown";
-import { descriptionFromMarkdown } from "./markdownDescription";
+import { descriptionFromMarkdown } from "./markdownMetadata";
 
 test("renderMarkdown 渲染段落并可移除第一个标题", async () => {
   const html = await renderMarkdown("# 标题\n\n正文 *强调*", {

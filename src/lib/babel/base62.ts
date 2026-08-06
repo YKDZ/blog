@@ -1,10 +1,10 @@
-/** base62 字母表：十进制数字 + 大小写字母。 */
+/** base62 字母表 */
 export const BASE62_ALPHABET =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 const BASE62_RADIX = BigInt(BASE62_ALPHABET.length);
 
-/** 非负整数 → base62 短编号（0 编码为 "0"）。 */
+/** 非负整数 -> base62 短编号（0 编码为 "0"）。 */
 export const toBase62 = (value: bigint): string => {
   if (value < 0n) throw new RangeError("base62 只支持非负整数");
   if (value === 0n) return BASE62_ALPHABET[0]!;
@@ -19,7 +19,7 @@ export const toBase62 = (value: bigint): string => {
   return code;
 };
 
-/** base62 短编号 → 非负整数。 */
+/** base62 短编号 -> 非负整数。 */
 export const fromBase62 = (code: string): bigint => {
   if (code.length === 0) throw new RangeError("短编号不能为空");
 
@@ -38,4 +38,14 @@ export const fromBase62 = (code: string): bigint => {
   }
 
   return value;
+};
+
+export const randomBase62 = (length: number): string => {
+  let code = "";
+
+  for (let i = 0; i < length; i++) {
+    code += BASE62_ALPHABET[Math.floor(Math.random() * BASE62_ALPHABET.length)];
+  }
+
+  return code;
 };

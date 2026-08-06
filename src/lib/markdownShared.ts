@@ -40,3 +40,8 @@ export const textContent = (node: RootContent): string => {
 
   return "";
 };
+
+/** 取文本最开头的 n 个 Unicode 字符（跳过前导空白）。 */
+export const firstCharacters = (text: string, count: number): string => {
+  return Array.from(text.trimStart()).slice(0, count).join("");
+};

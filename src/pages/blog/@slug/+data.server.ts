@@ -2,6 +2,7 @@ import type { PageContextServer } from "vike/types";
 
 import { articleBabelSummary, blogLibrary } from "../../../lib/babel/articles";
 import { toBase62 } from "../../../lib/babel/base62";
+import { formatBookLocation } from "../../../lib/babel/display";
 import { contentHtml, getBlog, publicBlogMetadata } from "./lib";
 import type { BlogPageData } from "./types";
 
@@ -18,12 +19,15 @@ export const data = async (ctx: PageContextServer): Promise<BlogPageData> => {
     blog: publicBlogMetadata(blog),
     html: String(await contentHtml(blog)),
     babel: {
-      location: {
-        hexagon: toBase62(summary.location.hexagon),
-        wall: summary.location.wall,
-        shelfOnWall: summary.location.shelfOnWall,
-        volume: summary.location.volume,
-      },
+      shelfLabel: formatBookLocation(
+        {
+          hexagon: toBase62(summary.location.hexagon),
+          wall: summary.location.wall,
+          shelfOnWall: summary.location.shelfOnWall,
+          volume: summary.location.volume,
+        },
+        { truncateHexagon: true },
+      ),
     },
   };
 };

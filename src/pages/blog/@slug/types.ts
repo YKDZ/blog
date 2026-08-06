@@ -20,12 +20,7 @@ export type BlogPageData = {
 };
 
 export type BlogBabelInfo = {
-  location: {
-    hexagon: string;
-    wall: number;
-    shelfOnWall: number;
-    volume: number;
-  };
+  shelfLabel: string;
 };
 
 export type BlogPreview = {
