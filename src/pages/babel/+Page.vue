@@ -14,16 +14,11 @@ import {
 import BlogArticleFooter from "@/components/BlogArticleFooter.vue";
 import BlogArticleHeader from "@/components/BlogArticleHeader.vue";
 import BlogListItem from "@/components/BlogListItem.vue";
-import {
-  BASE62_ALPHABET,
-  fromBase62,
-  randomBase62,
-  toBase62,
-} from "@/lib/babel/base62";
+import { fromBase62, randomBase62, toBase62 } from "@/lib/babel/base62";
 import { formatBookLocation } from "@/lib/babel/display";
 import { createLibrary, type BookItem } from "@/lib/babel/library";
-import { firstCharacters } from "@/lib/markdownShared";
-import type { PostCardItem } from "@/lib/post";
+import { bookMetadata, type PostCardItem } from "@/lib/post";
+import { bookTitle } from "@/lib/title";
 
 import { headingIdFromText } from "../blog/@slug/plugins/headingId";
 import type { Data } from "./+data.server";
@@ -96,78 +91,23 @@ const startEnumeration = () => {
 
 const mode = ref<"browse" | "query">("browse");
 const books = ref<BookItem[]>([]);
-const cards = ref<(PostCardItem | undefined)[]>([]);
+const cards = ref<PostCardItem[]>([]);
 const loading = ref(false);
 const loadingMore = ref(false);
 const exhausted = ref(false);
 const browseError = ref<string>();
 const queryInput = ref("");
 let queryIterator: Generator<BookItem> | undefined;
-let metadataModulePromise: Promise<typeof import("@/lib/post")> | undefined;
 
-const loadMetadataModule = () => {
-  metadataModulePromise ??= import("@/lib/post");
+const cardItem = (book: BookItem): PostCardItem => {
+  const metadata = bookMetadata(book.text);
 
-  return metadataModulePromise;
-};
-
-const fallbackCardItem = (book: BookItem): PostCardItem => {
   return {
-    title: firstCharacters(book.text, 16) || "（空白）",
+    title: metadata.title || "（空白）",
     href: "#babel",
-    description: firstCharacters(book.text, 50),
+    description: metadata.description,
     time: "? 年 ? 月 ? 日",
   };
-};
-
-const loadCardItems = async (
-  collected: BookItem[],
-): Promise<PostCardItem[]> => {
-  const { bookMetadata } = await loadMetadataModule();
-
-  return collected.map((book) => {
-    const metadata = bookMetadata(book.text);
-
-    return {
-      title: metadata.title || "（空白）",
-      href: "#babel",
-      description: metadata.description,
-      time: "? 年 ? 月 ? 日",
-    };
-  });
-};
-
-const renderCollected = (
-  collected: BookItem[],
-  append: boolean,
-  version: number,
-) => {
-  const start = append ? books.value.length : 0;
-
-  if (append) {
-    books.value.push(...collected);
-    cards.value.push(...collected.map(() => undefined));
-  } else {
-    books.value = collected;
-    cards.value = collected.map(() => undefined);
-  }
-
-  void loadCardItems(collected)
-    .then((nextCards) => {
-      if (version !== activeVersion) return;
-
-      cards.value.splice(start, collected.length, ...nextCards);
-    })
-    .catch(() => {
-      if (version !== activeVersion) return;
-
-      cards.value.splice(
-        start,
-        collected.length,
-        ...collected.map(fallbackCardItem),
-      );
-      browseError.value = "元数据解析失败，已显示回退内容";
-    });
 };
 
 const loadPage = async (from: bigint, append: boolean, version: number) => {
@@ -205,7 +145,17 @@ const loadPage = async (from: bigint, append: boolean, version: number) => {
 
     if (collected.length < PAGE_SIZE) exhausted.value = true;
 
-    renderCollected(collected, append, version);
+    const nextCards = collected.map(cardItem);
+
+    if (version !== activeVersion) return;
+
+    if (append) {
+      books.value.push(...collected);
+      cards.value.push(...nextCards);
+    } else {
+      books.value = collected;
+      cards.value = nextCards;
+    }
   } catch (error) {
     if (version === activeVersion) {
       browseError.value =
@@ -247,7 +197,17 @@ const loadQueryPage = async (append: boolean, version: number) => {
 
     if (collected.length < PAGE_SIZE) exhausted.value = true;
 
-    renderCollected(collected, append, version);
+    const nextCards = collected.map(cardItem);
+
+    if (version !== activeVersion) return;
+
+    if (append) {
+      books.value.push(...collected);
+      cards.value.push(...nextCards);
+    } else {
+      books.value = collected;
+      cards.value = nextCards;
+    }
   } catch (error) {
     if (version === activeVersion) {
       browseError.value =
@@ -402,7 +362,7 @@ const showBook = async (book: BookItem) => {
   }
 
   currentBook.value = book;
-  currentBookTitle.value = "（空书）";
+  currentBookTitle.value = bookTitle(book.text) || "（空书）";
   view.value = "read";
   window.scrollTo(0, 0);
   readerHtml.value = "";
@@ -417,14 +377,11 @@ const showBook = async (book: BookItem) => {
   rawMarkdownHref.value = previousRawUrl;
 
   try {
-    const [{ default: BlogRenderer }, { renderMarkdown }, { bookTitle }] =
-      await Promise.all([
-        import("../blog/@slug/BlogRenderer.vue"),
-        import("@/lib/markdownClient"),
-        import("@/lib/title"),
-      ]);
+    const [{ default: BlogRenderer }, { renderMarkdown }] = await Promise.all([
+      import("../blog/@slug/BlogRenderer.vue"),
+      import("@/lib/markdownClient"),
+    ]);
     readerComponent.value = markRaw(BlogRenderer);
-    currentBookTitle.value = bookTitle(book.text) || "（空书）";
     readerHtml.value = await renderMarkdown(book.text, {
       removeFirstHeading: true,
     });
@@ -470,7 +427,6 @@ const navigateFromHash = () => {
 onMounted(() => {
   randomizeStart();
   ignoreNextInputChange = true;
-  void loadMetadataModule();
   window.addEventListener("hashchange", navigateFromHash);
   navigateFromHash();
 });
@@ -577,29 +533,12 @@ onBeforeUnmount(() => {
       <p v-if="loading" class="text-sm text-(--page-fg-muted)">探索中...</p>
       <template v-else>
         <div class="space-y-4">
-          <template
+          <BlogListItem
             v-for="(book, index) in books"
             :key="book.bookNumber.toString()"
-          >
-            <BlogListItem
-              v-if="cards[index]"
-              :item="cards[index]!"
-              @click="onCardClick($event, book)"
-            />
-            <article
-              v-else
-              class="border border-(--page-border-soft) bg-(--page-surface) px-5 py-4"
-            >
-              <div class="h-3 w-24 animate-pulse bg-(--page-border-soft)"></div>
-              <div
-                class="mt-2 h-5 w-2/3 animate-pulse bg-(--page-border-soft)"
-              ></div>
-              <div
-                class="mt-2 h-4 w-full animate-pulse bg-(--page-border-soft)"
-              ></div>
-              <span class="sr-only">加载中</span>
-            </article>
-          </template>
+            :item="cards[index]!"
+            @click="onCardClick($event, book)"
+          />
         </div>
         <p v-if="browseError" class="text-xs text-red-600">
           {{ browseError }}
