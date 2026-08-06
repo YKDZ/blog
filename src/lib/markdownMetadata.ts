@@ -51,6 +51,12 @@ export const firstMarkdownHeading = (content: string): string | undefined => {
   return metadataFromMarkdown(content).title;
 };
 
+const truncateDescription = (description: string, maxLength: number) => {
+  if (description.length <= maxLength) return description;
+
+  return `${description.slice(0, maxLength).trimEnd()}...`;
+};
+
 /** 提取摘要描述：第一个标题之后的第一个段落，空白归一化后截断。 */
 export const descriptionFromMarkdown = (
   content: string,
@@ -59,9 +65,7 @@ export const descriptionFromMarkdown = (
   const description = metadataFromMarkdown(content).description;
 
   if (description === undefined) return undefined;
-  if (description.length <= maxLength) return description;
-
-  return `${description.slice(0, maxLength).trimEnd()}...`;
+  return truncateDescription(description, maxLength);
 };
 
 /**
@@ -75,7 +79,10 @@ export const metadataWithFallback = (
 
   return {
     title: metadata.title || firstCharacters(content, 16),
-    description: metadata.description ?? firstCharacters(content, 50),
+    description:
+      metadata.description === undefined
+        ? firstCharacters(content, 50)
+        : truncateDescription(metadata.description, 160),
   };
 };
 

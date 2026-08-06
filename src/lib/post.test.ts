@@ -20,3 +20,11 @@ test("bookMetadata 与博客共用标题和描述提取", () => {
     description: "第一段 强调。",
   });
 });
+
+test("bookMetadata 的描述与博客一样截断到 160 字符", () => {
+  const longParagraph = `${"字".repeat(180)}`;
+  const metadata = bookMetadata(`# 标题\n\n${longParagraph}`);
+
+  expect(metadata.description.endsWith("...")).toBe(true);
+  expect(metadata.description.length).toBe(160 + 3);
+});
