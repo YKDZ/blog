@@ -20,7 +20,7 @@ catalog:
   "@types/node": ^24.13.3
   "@vitejs/plugin-vue": ^6.0.8
   "@vue/tsconfig": ^0.9.1
-  "@vueuse/core": ^14.3.0
+  "@vueuse/core": ^15.0.0
   fast-xml-parser: ^5.10.0
   fast-xml-validator: ^1.2.0
   oxfmt: ^0.62.0
